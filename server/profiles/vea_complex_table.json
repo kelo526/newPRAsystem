@@ -1,0 +1,153 @@
+{
+  "url": "https://panjiachen.github.io/vue-element-admin/#/table/complex-table",
+  "version": 1,
+  "generated_at": "2026-09-16T00:30:23",
+  "fields": [
+    {
+      "key": "f_elx_3",
+      "label": "标题",
+      "semantic_name": "标题",
+      "type": "text",
+      "placeholder": "标题",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "el_input",
+        "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > div.el-input.el-input--medium:nth-of-type(1)",
+        "labels": [
+          "标题"
+        ]
+      }
+    },
+    {
+      "key": "f_elx_4",
+      "label": "重要性",
+      "semantic_name": "重要性",
+      "type": "select",
+      "placeholder": "重要性",
+      "options": [
+        "1",
+        "2",
+        "3"
+      ],
+      "required": false,
+      "locator": {
+        "component": "el_select",
+        "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > div.el-select.el-select--medium:nth-of-type(2)",
+        "labels": [
+          "重要性"
+        ]
+      }
+    },
+    {
+      "key": "f_elx_6",
+      "label": "类型",
+      "semantic_name": "类型",
+      "type": "select",
+      "placeholder": "类型",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "el_select",
+        "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > div.el-select.el-select--medium:nth-of-type(3)",
+        "labels": [
+          "类型"
+        ]
+      }
+    },
+    {
+      "key": "f_elx_8",
+      "label": "请选择",
+      "semantic_name": "请选择",
+      "type": "select",
+      "placeholder": "请选择",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "el_select",
+        "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > div.el-select.el-select--medium:nth-of-type(4)",
+        "labels": [
+          "请选择"
+        ]
+      }
+    },
+    {
+      "key": "f_elx_10",
+      "label": "请选择",
+      "semantic_name": "请选择",
+      "type": "select",
+      "placeholder": "请选择",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "el_select",
+        "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(3) > div.el-pagination > span.el-pagination__sizes:nth-of-type(2) > div.el-select.el-select--mini",
+        "labels": [
+          "请选择"
+        ]
+      }
+    }
+  ],
+  "actions": [
+    {
+      "key": "a_2",
+      "label": "搜索",
+      "semantic_name": "搜索",
+      "kind": "query",
+      "locator": {
+        "selector": "button:has-text(\"搜索\")",
+        "css_selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > button.el-button.el-button--primary.el-button--medium:nth-of-type(1)",
+        "texts": [
+          "搜索"
+        ]
+      }
+    },
+    {
+      "key": "a_3",
+      "label": "添加",
+      "semantic_name": "添加",
+      "kind": "other",
+      "locator": {
+        "selector": "button:has-text(\"添加\")",
+        "css_selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > button.el-button.el-button--primary.el-button--medium:nth-of-type(2)",
+        "texts": [
+          "添加"
+        ]
+      }
+    },
+    {
+      "key": "a_4",
+      "label": "导出",
+      "semantic_name": "导出",
+      "kind": "export",
+      "locator": {
+        "selector": "button:has-text(\"导出\")",
+        "css_selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div:nth-of-type(1) > button.el-button.el-button--primary.el-button--medium:nth-of-type(3)",
+        "texts": [
+          "导出"
+        ]
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "t_0",
+      "component": "el_table",
+      "columns": [
+        "序号",
+        "时间",
+        "标题",
+        "作者",
+        "重要性",
+        "阅读数",
+        "状态",
+        "操作"
+      ],
+      "selector": "div:nth-of-type(2) > div > div:nth-of-type(2) > section > div > div.el-table.el-table--fit.el-table--border:nth-of-type(2)"
+    }
+  ],
+  "meta": {
+    "used_llm": false,
+    "login_url": "https://panjiachen.github.io/vue-element-admin/#/login"
+  }
+}

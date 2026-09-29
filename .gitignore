@@ -1,0 +1,28 @@
+# ===== 本地运行环境（体积大，不可发布）=====
+# PostgreSQL 17 便携版（约 960MB，由 setup.ps1 按需下载安装）
+pg17/
+pg_pw.txt
+
+# ===== 密钥与环境 =====
+server/.env
+
+# ===== 运行时数据（启动后自动重建）=====
+server/newpra.db
+server/sessions/
+server/tasks/
+server/artifacts/
+server/m2_state.json
+server/profiles/session_*.json
+server/diag_*/
+server/diag_*.png
+
+# ===== 依赖与缓存 =====
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# ===== 日志 =====
+*.log

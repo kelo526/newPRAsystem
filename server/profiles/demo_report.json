@@ -1,0 +1,236 @@
+{
+  "url": "http://localhost:5173/report",
+  "version": 1,
+  "generated_at": "2026-09-17T01:08:32",
+  "fields": [
+    {
+      "key": "f_antd_0",
+      "label": "统计日期",
+      "semantic_name": "统计日期",
+      "type": "date_range",
+      "placeholder": "",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "antd_date_range",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(1) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-picker.ant-picker-range.ant-picker-outlined",
+        "labels": [
+          "统计日期"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_1",
+      "label": "区域",
+      "semantic_name": "区域",
+      "type": "multi_select",
+      "placeholder": "请选择区域",
+      "options": [
+        "华东",
+        "华南",
+        "华北",
+        "西南",
+        "西北",
+        "东北"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(2) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "区域",
+          "请选择区域"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_2",
+      "label": "订单状态",
+      "semantic_name": "订单状态",
+      "type": "select",
+      "placeholder": "请选择状态",
+      "options": [
+        "待处理",
+        "处理中",
+        "已完成",
+        "已取消"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(3) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "订单状态",
+          "请选择状态"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_3",
+      "label": "产品类型",
+      "semantic_name": "产品类型",
+      "type": "select",
+      "placeholder": "请选择产品类型",
+      "options": [
+        "手机",
+        "平板",
+        "笔记本",
+        "穿戴",
+        "配件"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(4) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "产品类型",
+          "请选择产品类型"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_4",
+      "label": "渠道",
+      "semantic_name": "渠道",
+      "type": "select",
+      "placeholder": "请选择渠道",
+      "options": [
+        "线上",
+        "门店",
+        "电商"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(5) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "渠道",
+          "请选择渠道"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_5",
+      "label": "数据范围",
+      "semantic_name": "数据范围",
+      "type": "select",
+      "placeholder": "请选择数据范围",
+      "options": [
+        "全部数据",
+        "仅异常",
+        "仅补录"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(6) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "数据范围",
+          "请选择数据范围"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_6",
+      "label": "业务线",
+      "semantic_name": "业务线",
+      "type": "select",
+      "placeholder": "请选择业务线",
+      "options": [
+        "全渠道",
+        "线上直营",
+        "运营商",
+        "政企"
+      ],
+      "required": false,
+      "locator": {
+        "component": "antd_select",
+        "selector": "main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(7) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control:nth-of-type(2) > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-select.ant-select-outlined.ant-select-in-form-item",
+        "labels": [
+          "业务线",
+          "请选择业务线"
+        ]
+      }
+    },
+    {
+      "key": "f_antd_7",
+      "label": "订单编号",
+      "semantic_name": "订单编号",
+      "type": "text",
+      "placeholder": "请输入订单编号",
+      "options": [],
+      "required": false,
+      "locator": {
+        "component": "antd_input",
+        "selector": "#keyword",
+        "labels": [
+          "订单编号",
+          "请输入订单编号"
+        ]
+      }
+    }
+  ],
+  "actions": [
+    {
+      "key": "a_2",
+      "label": "查询",
+      "semantic_name": "查询",
+      "kind": "query",
+      "locator": {
+        "selector": "button:has-text(\"查询\")",
+        "css_selector": "div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(9) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-space.ant-space-horizontal.ant-space-align-center > div.ant-space-item:nth-of-type(1) > button.ant-btn.ant-btn-primary.ant-btn-color-primary",
+        "texts": [
+          "查询"
+        ]
+      }
+    },
+    {
+      "key": "a_3",
+      "label": "重置",
+      "semantic_name": "重置",
+      "kind": "reset",
+      "locator": {
+        "selector": "button:has-text(\"重置\")",
+        "css_selector": "div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(9) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-space.ant-space-horizontal.ant-space-align-center > div.ant-space-item:nth-of-type(2) > button.ant-btn.ant-btn-default.ant-btn-color-default",
+        "texts": [
+          "重置"
+        ]
+      }
+    },
+    {
+      "key": "a_4",
+      "label": "导出 Excel",
+      "semantic_name": "导出 Excel",
+      "kind": "export",
+      "locator": {
+        "selector": "button:has-text(\"导出 Excel\")",
+        "css_selector": "div.ant-card-body > form.ant-form.ant-form-inline > div.ant-form-item.ant-form-item-inline:nth-of-type(9) > div.ant-row.ant-form-item-row > div.ant-col.ant-form-item-control > div.ant-form-item-control-input > div.ant-form-item-control-input-content > div.ant-space.ant-space-horizontal.ant-space-align-center > div.ant-space-item:nth-of-type(3) > button.ant-btn.ant-btn-primary.ant-btn-color-primary",
+        "texts": [
+          "导出 Excel"
+        ]
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "t_0",
+      "component": "antd_table",
+      "columns": [
+        "订单编号",
+        "订单日期",
+        "区域",
+        "产品类型",
+        "渠道",
+        "业务线",
+        "订单状态",
+        "数量",
+        "金额（元）"
+      ],
+      "selector": "div > div.ant-layout > main.ant-layout-content > div.ant-card.ant-card-bordered > div.ant-card-body > div.ant-table-wrapper > div.ant-spin-nested-loading > div.ant-spin-container > div.ant-table.ant-table-middle"
+    }
+  ],
+  "meta": {
+    "used_llm": false,
+    "login_url": "http://localhost:5173/login"
+  }
+}
