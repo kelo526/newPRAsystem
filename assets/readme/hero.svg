@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" font-family="'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif">
+  <!-- newPRAsystem 首屏：轻产品底色，母题 = 网页 → 配置表单 → 定时运行 的转化流 -->
+  <rect width="1200" height="340" fill="#F7F8FA"/>
+
+  <!-- 左：标题区 -->
+  <text x="64" y="98" font-size="46" font-weight="700" fill="#1F2329">newPRAsystem</text>
+  <text x="64" y="136" font-size="19" fill="#2F6FED">业务网页 → 可配置 · 可复用 · 可定时运行的机器人任务</text>
+  <text x="64" y="168" font-size="15" fill="#646A73">登记目标系统即自动解析筛选字段与动作，像填表单一样配置业务条件；</text>
+  <text x="64" y="192" font-size="15" fill="#646A73">网页改版重新解析自愈，调整条件只改配置，无需重录流程或改代码。</text>
+
+  <g font-size="13" fill="#1F2329">
+    <rect x="64" y="262" width="104" height="26" rx="13" fill="#EEF4FF"/>
+    <text x="116" y="279" text-anchor="middle">网页字段自动发现</text>
+    <rect x="180" y="262" width="104" height="26" rx="13" fill="#EEF4FF"/>
+    <text x="232" y="279" text-anchor="middle">填表式任务配置</text>
+    <rect x="296" y="262" width="104" height="26" rx="13" fill="#EEF4FF"/>
+    <text x="348" y="279" text-anchor="middle">cron 定时调度</text>
+    <rect x="412" y="262" width="104" height="26" rx="13" fill="#EEF4FF"/>
+    <text x="464" y="279" text-anchor="middle">任务包可导出</text>
+  </g>
+
+  <!-- 右：三步转化卡 -->
+  <!-- ① 登记目标系统：迷你浏览器 -->
+  <rect x="640" y="52" width="150" height="130" rx="10" fill="#FFFFFF" stroke="#D9DEE7"/>
+  <rect x="640" y="52" width="150" height="26" rx="10" fill="#F0F2F5"/>
+  <rect x="640" y="66" width="150" height="12" fill="#F0F2F5"/>
+  <circle cx="656" cy="65" r="4" fill="#2F6FED"/>
+  <rect x="670" y="61" width="108" height="8" rx="4" fill="#D9DEE7"/>
+  <rect x="656" y="92" width="118" height="12" rx="4" fill="#F0F2F5"/>
+  <rect x="656" y="112" width="118" height="12" rx="4" fill="#F0F2F5"/>
+  <rect x="656" y="136" width="64" height="20" rx="6" fill="#2F6FED"/>
+  <text x="700" y="196" font-size="13" fill="#1F2329" text-anchor="middle" font-weight="600">① 登记目标系统</text>
+
+  <g stroke="#9DB4F0" stroke-width="2" fill="none"><line x1="796" y1="117" x2="822" y2="117"/></g>
+  <path d="M824 117 l-7 -4 v8 z" fill="#9DB4F0"/>
+
+  <!-- ② 填表式配置：表单卡 -->
+  <rect x="832" y="52" width="150" height="130" rx="10" fill="#FFFFFF" stroke="#D9DEE7"/>
+  <text x="848" y="78" font-size="12" fill="#646A73">日期预设</text>
+  <rect x="848" y="86" width="118" height="16" rx="4" fill="#F0F2F5" stroke="#D9DEE7"/>
+  <text x="856" y="98" font-size="11" fill="#1F2329">本月</text>
+  <text x="848" y="122" font-size="12" fill="#646A73">状态</text>
+  <rect x="848" y="130" width="118" height="16" rx="4" fill="#F0F2F5" stroke="#D9DEE7"/>
+  <text x="856" y="142" font-size="11" fill="#1F2329">已审核 ▾</text>
+  <rect x="848" y="156" width="118" height="18" rx="6" fill="#2F6FED"/>
+  <text x="907" y="169" font-size="11" fill="#FFFFFF" text-anchor="middle">动作：导出 Excel</text>
+  <text x="907" y="196" font-size="13" fill="#1F2329" text-anchor="middle" font-weight="600">② 填表式配置</text>
+
+  <g stroke="#9DB4F0" stroke-width="2" fill="none"><line x1="988" y1="117" x2="1014" y2="117"/></g>
+  <path d="M1016 117 l-7 -4 v8 z" fill="#9DB4F0"/>
+
+  <!-- ③ 定时运行：时钟卡 -->
+  <rect x="1024" y="52" width="150" height="130" rx="10" fill="#FFFFFF" stroke="#D9DEE7"/>
+  <circle cx="1099" cy="102" r="30" fill="#F0F2F5" stroke="#2F6FED" stroke-width="2"/>
+  <line x1="1099" y1="102" x2="1099" y2="82" stroke="#2F6FED" stroke-width="3" stroke-linecap="round"/>
+  <line x1="1099" y1="102" x2="1113" y2="108" stroke="#1F2329" stroke-width="2" stroke-linecap="round"/>
+  <text x="1099" y="150" font-size="11" fill="#646A73" text-anchor="middle" font-family="ui-monospace,Consolas,monospace">cron 0 9 * * *</text>
+  <rect x="1040" y="158" width="118" height="16" rx="8" fill="#E8F7EE"/>
+  <text x="1099" y="170" font-size="11" fill="#15803D" text-anchor="middle">✓ 昨日运行成功</text>
+  <text x="1099" y="196" font-size="13" fill="#1F2329" text-anchor="middle" font-weight="600">③ 定时运行</text>
+
+  <!-- 底部注脚 -->
+  <rect x="640" y="262" width="534" height="26" rx="13" fill="#FFFFFF" stroke="#D9DEE7"/>
+  <text x="907" y="279" font-size="13" fill="#646A73" text-anchor="middle">FastAPI · React/AntD 5 · Playwright · SQLite / PostgreSQL · GLM 语义化（可选）</text>
+</svg>

@@ -11,8 +11,10 @@ Write-Host "============================================"
 Write-Host "  newPRAsystem 一键启动"
 Write-Host "============================================"
 
-# [1/4] PostgreSQL（5433）
-if (Test-Port 5433) {
+# [1/4] PostgreSQL（5433）——pg17\ 不存在（未随仓库分发）时跳过，后端自动使用 SQLite
+if (-not (Test-Path "$root\pg17\bin\pg_ctl.exe")) {
+    Write-Host "[1/4] PostgreSQL：未安装（pg17\ 不存在），后端使用 SQLite（server\newpra.db）"
+} elseif (Test-Port 5433) {
     Write-Host "[1/4] PostgreSQL：已在运行"
 } else {
     & "$root\pg17\bin\pg_ctl.exe" -D "$root\pg17\data" -l "$root\pg17\pg.log" start
@@ -45,7 +47,11 @@ Write-Host ""
 Write-Host "  平台前端：     http://localhost:5174"
 Write-Host "  模拟业务系统：  http://localhost:5173  （admin / admin123）"
 Write-Host "  后端健康检查：  http://localhost:8000/api/health"
-Write-Host "  PostgreSQL：    localhost:5433 / 库 newpra"
+if (Test-Path "$root\pg17\bin\pg_ctl.exe") {
+    Write-Host "  PostgreSQL：    localhost:5433 / 库 newpra"
+} else {
+    Write-Host "  数据库：        SQLite（server\newpra.db，零配置）"
+}
 Write-Host "============================================"
 Write-Host ""
 Write-Host "提示：停止服务请运行 stop.bat"

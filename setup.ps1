@@ -24,21 +24,31 @@ python -m playwright install chromium
 if ($LASTEXITCODE -ne 0) { throw "Chromium 下载失败" }
 
 Set-Location $root
-Write-Host "[3/5] PostgreSQL 数据目录初始化 ..."
-if (Test-Path "$root\pg17\data") {
-    Write-Host "       数据目录已存在，跳过"
-} else {
-    "newpra2026" | Out-File -Encoding ascii "$root\pg_pw.txt"
-    & "$root\pg17\bin\initdb.exe" -D "$root\pg17\data" -U postgres -A password --pwfile="$root\pg_pw.txt" -E UTF8 --locale=C
-    Remove-Item "$root\pg_pw.txt"
-}
+if (Test-Path "$root\pg17\bin\initdb.exe") {
+    Write-Host "[3/5] PostgreSQL 数据目录初始化 ..."
+    if (Test-Path "$root\pg17\data") {
+        Write-Host "       数据目录已存在，跳过"
+    } else {
+        "newpra2026" | Out-File -Encoding ascii "$root\pg_pw.txt"
+        & "$root\pg17\bin\initdb.exe" -D "$root\pg17\data" -U postgres -A password --pwfile="$root\pg_pw.txt" -E UTF8 --locale=C
+        Remove-Item "$root\pg_pw.txt"
+    }
 
-Write-Host "[4/5] 启动 PostgreSQL 并建库 ..."
-& "$root\pg17\bin\pg_ctl.exe" -D "$root\pg17\data" -l "$root\pg17\pg.log" start
-Start-Sleep -Seconds 3
-$env:PGPASSWORD = "newpra2026"
-& "$root\pg17\bin\psql.exe" -U postgres -h localhost -p 5433 -c "CREATE DATABASE newpra ENCODING 'UTF8';"
-Write-Host "       （库已存在时上面的报错可忽略）"
+    Write-Host "[4/5] 启动 PostgreSQL 并建库 ..."
+    & "$root\pg17\bin\pg_ctl.exe" -D "$root\pg17\data" -l "$root\pg17\pg.log" start
+    Start-Sleep -Seconds 3
+    $env:PGPASSWORD = "newpra2026"
+    & "$root\pg17\bin\psql.exe" -U postgres -h localhost -p 5433 -c "CREATE DATABASE newpra ENCODING 'UTF8';"
+    Write-Host "       （库已存在时上面的报错可忽略）"
+} else {
+    Write-Host "[3/5] 未检测到 pg17\bin\initdb.exe —— PostgreSQL 便携版不随仓库分发，跳过数据库安装"
+    Write-Host "[4/5] 默认使用 SQLite（server\newpra.db，零配置），首次启动自动建表"
+    if (-not (Test-Path "$root\server\.env")) {
+        Set-Content -Path "$root\server\.env" -Value "DATABASE_URL=sqlite:///./newpra.db" -Encoding ascii
+        Write-Host "       已生成 server\.env（DATABASE_URL=sqlite:///./newpra.db）"
+    }
+    Write-Host "       如需 PostgreSQL：自行安装后在 server\.env 配置 DATABASE_URL=postgresql+psycopg2://<用户>:<密码>@<主机>:<端口>/<库名>"
+}
 
 Write-Host "[5/5] 前端依赖 ..."
 Set-Location "$root\web"; npm install
