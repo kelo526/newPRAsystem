@@ -51,6 +51,7 @@ def create_system(payload: SystemCreate, db: Session = Depends(get_db)):
         password_selector=payload.password_selector,
         submit_selector=payload.submit_selector,
         pre_clicks=payload.pre_clicks,
+        role_name=payload.role_name,
     )
     db.add(system)
     db.commit()
@@ -68,7 +69,11 @@ class SystemUpdate(BaseModel):
     login_url: str | None = None
     username: str | None = None
     password: str | None = None  # 传空或不传则保持不变
+    username_selector: str | None = None  # 显式登录选择器（None=不修改，空串=清除）
+    password_selector: str | None = None
+    submit_selector: str | None = None
     pre_clicks: list[str] | None = None  # 登录前置点击（两步式门户）
+    role_name: str | None = None  # 登录后切换的个人权限角色（空串=清除）
 
 
 @router.put("/systems/{system_id}", response_model=SystemOut)
@@ -81,10 +86,16 @@ def update_system(system_id: int, payload: SystemUpdate, db: Session = Depends(g
         value = getattr(payload, field)
         if value:
             setattr(system, field, value)
+    for field in ("username_selector", "password_selector", "submit_selector"):
+        value = getattr(payload, field)
+        if value is not None:
+            setattr(system, field, value)
     if payload.password:
         system.password_enc = crypto.encrypt(payload.password)
     if payload.pre_clicks is not None:
         system.pre_clicks = payload.pre_clicks
+    if payload.role_name is not None:
+        system.role_name = payload.role_name.strip()
     db.commit()
     db.refresh(system)
     return system
@@ -194,6 +205,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
         schedule=payload.schedule,
         delivery=payload.delivery,
         retry_count=min(max(payload.retry_count or 0, 0), 5),
+        export_timeout=max(payload.export_timeout or 180, 30),
         trigger_token=secrets.token_urlsafe(16),
     )
     db.add(task)
@@ -241,6 +253,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
             setattr(task, field, value)
     if payload.retry_count is not None:
         task.retry_count = min(max(payload.retry_count, 0), 5)
+    if payload.export_timeout is not None:
+        task.export_timeout = max(payload.export_timeout, 30)
     db.commit()
     db.refresh(task)
     scheduler.sync_task(task)

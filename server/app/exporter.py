@@ -269,9 +269,100 @@ class NativeInput:
         page.locator(selector).first.fill(str(value))
 
 
+class XuiSelect:
+    component = "xui_select"
+    DROPDOWN = ".xui-select-dropdown:not([style*='display: none'])"
+
+    def apply(self, page, selector, value):
+        values = value if isinstance(value, list) else [value]
+        for v in values:
+            page.locator(selector).first.click()
+            page.wait_for_timeout(600)
+            dropdown = page.locator(self.DROPDOWN)
+            opt = dropdown.locator(".xui-select-dropdown__item", has_text=str(v))
+            if opt.count() == 0:
+                # 树下拉：节点带单选圈时，点文字行不生效，须点圈
+                node = dropdown.locator(".xui-tree-node__content", has_text=str(v))
+                if node.count() == 0:
+                    # 子节点折叠未渲染：用下拉内置筛选框搜索
+                    filt = dropdown.locator(".xui-select-dropdown__filter input")
+                    if filt.count() > 0:
+                        filt.first.fill(str(v))
+                        page.wait_for_timeout(300)
+                        page.keyboard.press("Enter")
+                        page.wait_for_timeout(1000)
+                        node = dropdown.locator(".xui-tree-node__content", has_text=str(v))
+                    if node.count() == 0 and filt.count() > 0:
+                        icon = dropdown.locator(".xui-select-dropdown__filter .fa-search")
+                        if icon.count() > 0:
+                            icon.first.click()
+                            page.wait_for_timeout(1000)
+                            node = dropdown.locator(".xui-tree-node__content", has_text=str(v))
+                    if node.count() == 0:
+                        # 自定义树不响应筛选（如部门树）：逐级展开节点后重找
+                        if filt.count() > 0:
+                            filt.first.fill("")
+                            page.wait_for_timeout(500)
+                        for _ in range(5):
+                            icons = dropdown.locator(".xui-tree-node__expand-icon")
+                            expanded_any = False
+                            for i in range(icons.count()):
+                                ic = icons.nth(i)
+                                cls = ic.get_attribute("class") or ""
+                                if "expanded" in cls or "is-leaf" in cls:
+                                    continue
+                                try:
+                                    ic.click(timeout=600)
+                                    expanded_any = True
+                                    page.wait_for_timeout(200)
+                                except Exception:
+                                    continue
+                            page.wait_for_timeout(400)
+                            node = dropdown.locator(".xui-tree-node__content", has_text=str(v))
+                            if node.count() > 0 or not expanded_any:
+                                break
+                circle = node.first.locator(".xui-radio")
+                opt = circle if circle.count() > 0 else node
+            opt.first.click()
+            page.wait_for_timeout(300)
+        # xui 树下拉选中后浮层可能不收起，遮挡下方表单控件：Escape + 再点触发框双保险
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+        if page.locator(self.DROPDOWN).count() > 0:
+            page.locator(selector).first.click()
+            page.wait_for_timeout(300)
+
+
+class XuiInput:
+    component = "xui_input"
+
+    def apply(self, page, selector, value):
+        page.locator(f"{selector} input").first.fill(str(value))
+
+
+class XuiRadio:
+    component = "xui_radio"
+
+    def apply(self, page, selector, value):
+        v = value[0] if isinstance(value, list) else value
+        page.locator(f"{selector} .xui-radio", has_text=str(v)).first.click()
+        page.wait_for_timeout(200)
+
+
+class XuiCheckbox:
+    component = "xui_checkbox"
+
+    def apply(self, page, selector, value):
+        values = value if isinstance(value, list) else [value]
+        for v in values:
+            page.locator(f"{selector} .xui-checkbox", has_text=str(v)).first.click()
+            page.wait_for_timeout(200)
+
+
 ADAPTERS = {c.component: c() for c in [
     AntDSelect, AntDDateRange, AntDInput, ElSelect, ElInput,
     OxdSelect, OxdInput, NativeSelect, NativeInput,
+    XuiSelect, XuiInput, XuiRadio, XuiCheckbox,
 ]}
 
 
@@ -283,11 +374,19 @@ def field_selector(page, field):
             return sel
     except Exception:
         pass
-    comp_sel = {"antd_select": ".ant-select", "antd_date_range": ".ant-picker",
-                "antd_input": "input", "el_input": ".el-input"}.get(field["locator"]["component"])
-    if comp_sel:
+    layout = {
+        "antd_select": (".ant-form-item", ".ant-form-item-label label", ".ant-select"),
+        "antd_date_range": (".ant-form-item", ".ant-form-item-label label", ".ant-picker"),
+        "antd_input": (".ant-form-item", ".ant-form-item-label label", "input"),
+        "xui_select": (".xui-form-item", ".xui-form-item__label", ".xui-select"),
+        "xui_input": (".xui-form-item", ".xui-form-item__label", ".xui-input"),
+        "xui_radio": (".xui-form-item", ".xui-form-item__label", ".xui-radio-group"),
+        "xui_checkbox": (".xui-form-item", ".xui-form-item__label", ".xui-checkbox-group"),
+    }.get(field["locator"]["component"])
+    if layout:
+        item_sel, label_sel, comp_sel = layout
         for label in field["locator"]["labels"]:
-            fallback = f'.ant-form-item:has(.ant-form-item-label label:has-text("{label}")) {comp_sel}'
+            fallback = f'{item_sel}:has({label_sel}:has-text("{label}")) {comp_sel}'
             try:
                 if page.locator(fallback).count() > 0:
                     return fallback

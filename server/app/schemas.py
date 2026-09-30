@@ -16,6 +16,7 @@ class SystemCreate(BaseModel):
     password_selector: str = ""
     submit_selector: str = ""
     pre_clicks: list[str] = Field(default_factory=list)  # 登录前置点击（两步式门户）
+    role_name: str = ""  # 登录后切换的个人权限角色（可选）
 
 
 class SystemOut(BaseModel):
@@ -27,6 +28,7 @@ class SystemOut(BaseModel):
     password_selector: str
     submit_selector: str
     pre_clicks: list
+    role_name: str = ""
     created_at: datetime
 
     class Config:
@@ -90,6 +92,7 @@ class TaskCreate(BaseModel):
     schedule: dict = Field(default_factory=lambda: {"enabled": False, "cron": ""})
     delivery: dict = Field(default_factory=lambda: {"type": "none"})
     retry_count: int = 0  # 失败自动重试次数（0~5）
+    export_timeout: int = 180  # 导出中心异步生成等待上限（秒）
 
 
 class TaskUpdate(BaseModel):
@@ -101,6 +104,7 @@ class TaskUpdate(BaseModel):
     delivery: Optional[dict] = None
     enabled: Optional[bool] = None
     retry_count: Optional[int] = None
+    export_timeout: Optional[int] = None
 
 
 class TaskOut(BaseModel):
@@ -114,6 +118,7 @@ class TaskOut(BaseModel):
     delivery: dict
     enabled: bool
     retry_count: int
+    export_timeout: int = 180
     trigger_token: str
     last_run_at: Optional[datetime]
     created_at: datetime

@@ -213,11 +213,13 @@ def _grab_login_error(page: Page) -> str:
 
 
 def _wait_page_ready(page: Page, timeout=30000):
-    """等待任意可配置元素渲染完成（组合选择器一次等待，覆盖 AntD/Element/原生）。"""
-    ready = ".ant-form-item, .el-form-item, .el-select, select, input:not([type=hidden])"
+    """等待任意可配置元素渲染完成（组合选择器一次等待，覆盖 AntD/Element/XUI/原生）。"""
+    ready = ".ant-form-item, .el-form-item, .xui-form-item, .el-select, .xui-select, select, input:not([type=hidden])"
     try:
         # 解析提取只关心 DOM 挂载，不要求可见（首个 input 常为 el-select 只读触发框）
         page.wait_for_selector(ready, timeout=timeout, state="attached")
+        # SPA 表单项分批异步挂载：首个控件出现后，再等其余字段渲染完成
+        page.wait_for_timeout(2000)
     except Exception as e:
         raise TimeoutError("页面未检测到任何可配置元素") from e
 

@@ -27,7 +27,7 @@ EXTRACT_JS = r"""
     while (node && node !== document.body && parts.length < 10) {
       let sel = node.tagName.toLowerCase();
       const stable = [...node.classList].filter(c =>
-        /^(ant-|el-)/.test(c) && !/(active|focus|hover|open|visible|hidden|disabled)/.test(c)
+        /^(ant-|el-|xui-)/.test(c) && !/(active|focus|hover|open|visible|hidden|disabled)/.test(c)
       );
       if (stable.length) sel += '.' + stable.slice(0, 3).join('.');
       // 始终带上同级序号，保证生成的 selector 唯一（同构表单/按钮组场景）
@@ -146,12 +146,65 @@ EXTRACT_JS = r"""
     out.fields.push({ ...base, component: 'el_input', placeholder: (inner && inner.placeholder) || '', selector: cssPath(el) });
   });
 
+  // ===== XUI（荣耀内部组件库，Element UI 同源，xui- 前缀） =====
+  document.querySelectorAll('.xui-form-item').forEach((item, idx) => {
+    if (!visible(item) || inChrome(item)) return;
+    const label = ((item.querySelector('.xui-form-item__label') || {}).textContent || '').trim();
+    const content = item.querySelector('.xui-form-item__content');
+    if (!content) return;
+    const base = { id: 'f_xui_' + idx, label };
+
+    const sel = content.querySelector('.xui-select');
+    if (sel) {
+      out.fields.push({
+        ...base, component: 'xui_select',
+        multiple: !!sel.querySelector('.xui-select__tags'),
+        placeholder: ((sel.querySelector('.xui-input__inner') || {}).placeholder || ''),
+        selector: cssPath(sel)
+      });
+      return;
+    }
+    const radio = content.querySelector('.xui-radio-group');
+    if (radio) {
+      out.fields.push({
+        ...base, component: 'xui_radio',
+        options: [...radio.querySelectorAll('.xui-radio')].map(e =>
+          ((e.querySelector('.xui-radio__label') || {}).textContent || e.textContent).trim()
+        ).filter(Boolean),
+        selector: cssPath(radio)
+      });
+      return;
+    }
+    const check = content.querySelector('.xui-checkbox-group');
+    if (check) {
+      out.fields.push({
+        ...base, component: 'xui_checkbox',
+        options: [...check.querySelectorAll('.xui-checkbox')].map(e =>
+          ((e.querySelector('.xui-checkbox__label') || {}).textContent || e.textContent).trim()
+        ).filter(Boolean),
+        selector: cssPath(check)
+      });
+      return;
+    }
+    const de = content.querySelector('.xui-date-editor');
+    if (de) { out.fields.push({ ...base, component: 'xui_date_range', selector: cssPath(de) }); return; }
+    const xinput = content.querySelector('.xui-input');
+    const inner = content.querySelector('input.xui-input__inner') || content.querySelector('input:not([type=hidden])');
+    if (inner) {
+      out.fields.push({
+        ...base, component: 'xui_input', placeholder: inner.placeholder || '',
+        selector: cssPath(xinput || inner)
+      });
+      return;
+    }
+  });
+
   // ===== 原生表单 =====
   document.querySelectorAll(
     'select, textarea, input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file])'
   ).forEach((el, idx) => {
-    // 排除已被组件库规则覆盖的 input（.el-input/.ant-input 自身及内部）
-    if (el.closest('.ant-form-item, .el-form-item, .ant-select, .ant-picker, .el-select, .el-date-editor, .ant-upload, .el-input, .ant-input, .ant-input-affix-wrapper')) return;
+    // 排除已被组件库规则覆盖的 input（.el-input/.ant-input/.xui-input 自身及内部）
+    if (el.closest('.ant-form-item, .el-form-item, .xui-form-item, .ant-select, .ant-picker, .el-select, .el-date-editor, .ant-upload, .el-input, .ant-input, .ant-input-affix-wrapper, .xui-input, .xui-select, .xui-date-editor, .xui-radio-group, .xui-checkbox-group')) return;
     if (!visible(el) || inChrome(el)) return;
     const comp = el.tagName === 'SELECT' ? 'native_select'
       : el.tagName === 'TEXTAREA' ? 'native_textarea'
@@ -204,8 +257,63 @@ def extract_candidates(page: Page):
             f["options"] = _grab_el_options(page, f["selector"])
         elif f.get("component") == "oxd_select":
             f["options"] = _grab_oxd_options(page, f["selector"])
+        elif f.get("component") == "xui_select":
+            f["options"] = _grab_xui_options(page, f["selector"])
         # 原生 select 的 options 在 EXTRACT_JS 中已直接抓取
     return data
+
+
+def _grab_xui_options(page: Page, selector: str):
+    """交互式抓取 XUI 下拉选项（浮层内联在 .xui-select 内，display 控制显隐）。
+
+    普通下拉抓 .xui-select-dropdown__item；树下拉（如部门选择器）
+    无下拉项，退而抓 .xui-tree-node 的节点文本。
+    """
+    opts = []
+    try:
+        page.locator(selector).first.click()
+        dropdown = ".xui-select-dropdown:not([style*='display: none'])"
+        try:
+            page.wait_for_selector(dropdown, timeout=5000)
+        except Exception:
+            # 点击未展开（可能点到了图标区域），再试一次
+            page.locator(selector).first.click()
+            page.wait_for_selector(dropdown, timeout=3000)
+        page.wait_for_timeout(500)
+        opts = page.eval_on_selector_all(
+            f"{dropdown} .xui-select-dropdown__item",
+            "els => els.map(e => e.textContent.trim()).filter(Boolean)",
+        )
+        if not opts or page.locator(f"{dropdown} .xui-tree").count() > 0:
+            # 树下拉：逐级展开折叠节点（含懒加载子级），再收集全部节点文本
+            for _ in range(6):
+                icons = page.locator(f"{dropdown} .xui-tree-node__expand-icon")
+                expanded_any = False
+                for i in range(icons.count()):
+                    ic = icons.nth(i)
+                    cls = ic.get_attribute("class") or ""
+                    if "expanded" in cls or "is-leaf" in cls:
+                        continue
+                    try:
+                        ic.click(timeout=600)
+                        expanded_any = True
+                        page.wait_for_timeout(200)
+                    except Exception:
+                        continue
+                if not expanded_any:
+                    break
+                page.wait_for_timeout(400)
+            opts = page.eval_on_selector_all(
+                f"{dropdown} .xui-tree-node__label",
+                "els => els.map(e => e.textContent.trim()).filter(Boolean)",
+            ) or opts
+        # 树节点 label 与 content 可能重复命中同一文本，保序去重
+        opts = list(dict.fromkeys(opts))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
+    except Exception:
+        opts = []
+    return opts
 
 
 def _grab_oxd_options(page: Page, selector: str):
