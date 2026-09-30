@@ -141,9 +141,9 @@ server/
 ## 6. 运维手册
 
 ### 启停
-- `start.bat` / `stop.bat`（根目录）；已在运行的服务自动跳过
+- 标准命令见 README「快速开始」（跨平台）；Windows 便利脚本 `powershell -ExecutionPolicy Bypass -File start.ps1` / `stop.ps1`（根目录），已在运行的服务自动跳过
 - PostgreSQL 单独管理：`.\pg17\bin\pg_ctl.exe -D pg17\data start|stop|status`
-- 重启电脑后 PG **不会自启**，先跑 start.bat（脚本会先拉起 PG）
+- 重启电脑后 PG **不会自启**，先跑 start.ps1（脚本会先拉起 PG；无 `pg17\` 时自动以 SQLite 模式运行）
 
 ### server/.env 配置项
 | 键 | 说明 |

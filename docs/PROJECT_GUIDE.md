@@ -65,7 +65,7 @@
 
 - 前端 React 18 + Ant Design 5；后端 FastAPI + SQLAlchemy + APScheduler；自动化引擎 Playwright；数据库 PostgreSQL 17
 - LLM（GLM）用于字段语义化命名，可选未配置时自动降级为规则命名，功能不受阻
-- **部署**：Windows 环境双击 `setup.bat`（首次）→ `start.bat`（日常）；详细运维见交接文档
+- **部署**：标准命令见 README「快速开始」（Windows / Linux 均可）；Windows 另有 `setup.ps1`（首次）→ `start.ps1`（日常）一键脚本；详细运维见交接文档
 
 ## 7. 里程碑
 

@@ -12,31 +12,63 @@
 
 ## 快速开始
 
-前置要求：**Node.js 18+**、**Python 3.11+**（已加入 PATH），Windows。
+**前置要求**：Python 3.11+（含 pip）、Node.js 18+（含 npm）。首次部署需下载 Playwright Chromium（约 150MB）。
+**数据库零配置**：默认 SQLite（`server/newpra.db`），不装任何数据库即可跑通全部功能；PostgreSQL 为可选升级，两种模式表结构兼容、随时互切。
 
-> **关于数据库**：仓库不包含 PostgreSQL 便携版（`pg17/` 约 960MB，不入库）。部署脚本会自动检测——没有它就以 **SQLite** 模式运行，零数据库配置、开箱即用；需要 PostgreSQL 再按方式 B 接入，两种模式表结构兼容、数据可迁移。
+**1 · 安装依赖**
 
-### 方式 A · SQLite，零数据库配置（建议先用这条跑通）
+```bash
+# Windows（cmd 或 PowerShell）
+cd server && pip install -r requirements.txt && python -m playwright install chromium && cd ..
+cd web && npm install && cd ..
+cd demo-target && npm install && cd ..
 
-```text
-1. 双击 setup.bat   安装前后端依赖 + 下载 Playwright Chromium
-                    检测到无 pg17\ 时自动生成 server\.env（DATABASE_URL=sqlite:///./newpra.db），跳过数据库安装
-2. 双击 start.bat   启动全部服务（首次启动自动建表、自动生成凭证加密密钥）
+# Linux / macOS
+cd server && python3 -m pip install -r requirements.txt && python3 -m playwright install chromium && cd ..
+cd web && npm install && cd ..
+cd demo-target && npm install && cd ..
 ```
 
-### 方式 B · PostgreSQL 完整体验
+**2 · 启动服务**（开 3 个终端分别执行）
 
-自选一种安装方式，两种都由 `setup.bat` 自动完成初始化与建库：
+```bash
+# 终端 1 · 后端（SQLite 模式：首次启动自动建表、自动生成凭证加密密钥）
+cd server
+python -m uvicorn main:app --port 8000        # Windows
+python3 -m uvicorn main:app --port 8000      # Linux / macOS
 
-- **已有 PostgreSQL**：在 `server/.env` 配置 `DATABASE_URL=postgresql+psycopg2://<用户>:<密码>@<主机>:<端口>/<库名>`
-- **便携版**：下载 EDB PostgreSQL 17 zip 解压为 `pg17\`（使 `pg17\bin\initdb.exe` 存在），`setup.bat` 将完成 initdb、建库 `newpra`（端口 5433）并启动
+# 终端 2 · 平台前端
+cd web && npm run dev          # → http://localhost:5174
 
-### 日常启动 / 停止
+# 终端 3 · 模拟业务系统（「三分钟上手」的目标站点）
+cd demo-target && npm run dev  # → http://localhost:5173
+```
 
-| 脚本 | 作用 |
+**3 · 验证**：http://localhost:8000/api/health 返回 `{"status": "ok"}`，打开 http://localhost:5174 进入平台即成功。
+
+### 常见问题
+
+| 现象 | 处理 |
+| --- | --- |
+| Windows 输入 `python` 弹出 Microsoft Store | 用 `py -3` 代替 `python` |
+| Linux 报 `externally-managed-environment` | `python3 -m venv .venv && source .venv/bin/activate` 后再安装 |
+| Playwright Chromium 下载慢 | Windows：`set PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/`；Linux/macOS 用 `export` 同名变量后重试 |
+| pip / npm 下载慢（国内网络） | pip 追加 `-i https://pypi.tuna.tsinghua.edu.cn/simple`；npm 用 `npm config set registry https://registry.npmmirror.com` |
+
+### Windows 一键脚本（可选）
+
+仓库另提供 PowerShell 脚本，与上面手动命令完全等价：
+
+| 命令 | 作用 |
 |---|---|
-| `start.bat` | 一键启动四个服务（已在运行的自动跳过） |
-| `stop.bat`  | 一键停止全部服务 |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1` | 首次部署：装依赖 + Chromium；无 `pg17\` 时自动生成 `server\.env`（SQLite 模式） |
+| `powershell -ExecutionPolicy Bypass -File start.ps1` | 一键启动全部服务（已在运行的自动跳过） |
+| `powershell -ExecutionPolicy Bypass -File stop.ps1` | 一键停止全部服务 |
+
+### 用 PostgreSQL（可选升级）
+
+- **已有 PostgreSQL**：在 `server/.env` 写 `DATABASE_URL=postgresql+psycopg2://<用户>:<密码>@<主机>:<端口>/<库名>`，重启后端即自动建表
+- **便携版（Windows）**：EDB PostgreSQL 17 zip 解压为 `pg17\`，`setup.ps1` 自动完成 initdb、建库 `newpra`（端口 5433）并启动
 
 ### 服务地址
 
@@ -45,7 +77,7 @@
 | **平台前端** | http://localhost:5174 | 主入口 |
 | 模拟业务系统 | http://localhost:5173 | 登录 admin / admin123，用于体验全流程 |
 | 后端 API | http://localhost:8000/api/health | 健康检查 |
-| PostgreSQL | localhost:5433 / 库 `newpra` | 仅方式 B；方式 A 为 SQLite（`server/newpra.db`） |
+| PostgreSQL | localhost:5433 / 库 `newpra` | 仅 PostgreSQL 模式；SQLite 模式为 `server/newpra.db` |
 
 ## 三分钟上手（用模拟系统走通全流程）
 
@@ -73,7 +105,7 @@
 
 ```
 newPRAsystem/
-├─ start.bat / stop.bat / setup.bat   # 一键启动 / 停止 / 部署（自动检测 SQLite / PostgreSQL 模式）
+├─ setup.ps1 / start.ps1 / stop.ps1   # Windows 一键部署 / 启动 / 停止（可选，与 README 手动命令等价）
 ├─ demo-target/     # 模拟业务系统（React + AntD 5，含登录/报表/导出）
 ├─ server/          # 后端（FastAPI + SQLAlchemy + 解析/回放引擎 + 调度）
 │   └─ .env.example # 环境变量模板（数据库 / GLM / SMTP，均为可选项）
