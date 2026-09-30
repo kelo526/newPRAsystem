@@ -78,11 +78,14 @@ TASK["login"]["password"] = CFG.get("password") or os.environ.get("NEWPRA_TASK_P
 OUTPUT_DIR = CFG.get("output_dir") or "exports"
 
 # ---------------- 登录候选链（中英文/属性多重匹配） ----------------
+# 末尾的 id / 组件库类名是兜底（Element UI / XUI 登录页常无 name 属性）
 USERNAME_CANDIDATES = [
     "input[placeholder*='用户名']", "input[placeholder*='账号']",
     "input[placeholder*='user' i]", "input[name='username' i]",
     "input[name='user' i]", "input[name='account' i]",
     "input[autocomplete='username']", "input[type='email']",
+    "#username", "#user", "#account",
+    "input.el-input__inner", "input.xui-input__inner",
 ]
 PASSWORD_CANDIDATES = ["input[type='password']", "input[placeholder*='密码']"]
 SUBMIT_CANDIDATES = [

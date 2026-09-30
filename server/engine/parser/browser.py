@@ -11,16 +11,26 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, Page
 
 # 用户名输入框候选链（依次探测，第一个可见者胜出）
+# 末尾的 id / 组件库类名是兜底：Element UI / XUI 登录页（如荣耀统一门户
+# "邮箱地址、手机号码或账号名"）常无 name 属性，且 placeholder 多样
 USERNAME_CANDIDATES = [
     "input[placeholder*='用户名']",
     "input[placeholder*='账号']",
     "input[placeholder*='用户' i]",
+    "input[placeholder*='邮箱']",
+    "input[placeholder*='手机']",
+    "input[placeholder*='工号']",
     "input[name='username' i]",
     "input[name='user' i]",
     "input[name='account' i]",
     "input[name='loginname' i]",
     "input[autocomplete='username']",
     "input[type='email']",
+    "#username",
+    "#user",
+    "#account",
+    "input.el-input__inner",
+    "input.xui-input__inner",
 ]
 PASSWORD_CANDIDATES = [
     "input[type='password']",
