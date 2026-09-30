@@ -190,9 +190,9 @@ export default function Systems() {
           <Form.Item
             name="role_name"
             label="登录后切换个人权限角色（可选）"
-            extra="部分系统按角色开放功能（如荣耀工作台选「自制BA」才能导出）。填写角色名后，任务运行时自动检查并切换右上角角色"
+            extra="部分系统按角色开放功能（如需切到特定业务角色才能导出）。填写角色名后，任务运行时自动检查并切换右上角角色"
           >
-            <Input placeholder="如：自制BA" />
+            <Input placeholder="如：业务角色名" />
           </Form.Item>
         </Form>
       </Modal>

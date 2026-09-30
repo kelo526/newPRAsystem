@@ -303,6 +303,8 @@ def run_task_now(task_id: int, db: Session = Depends(get_db)):
 @router.post("/tasks/{task_id}/duplicate", response_model=TaskOut, status_code=201)
 def duplicate_task(task_id: int, db: Session = Depends(get_db)):
     """任务副本：复制配置后微调，即"临时变更"与"多版本任务"的入口。默认停用调度。"""
+    import secrets
+
     src = db.get(Task, task_id)
     if not src:
         raise HTTPException(404, "任务不存在")
@@ -315,6 +317,9 @@ def duplicate_task(task_id: int, db: Session = Depends(get_db)):
         schedule={**(src.schedule or {}), "enabled": False},
         delivery=src.delivery,
         enabled=False,
+        retry_count=src.retry_count or 0,
+        export_timeout=src.export_timeout or 180,
+        trigger_token=secrets.token_urlsafe(16),
     )
     db.add(copy)
     db.commit()
@@ -324,11 +329,12 @@ def duplicate_task(task_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/tasks/{task_id}/export")
-def export_task(task_id: int, embed_credentials: bool = True, db: Session = Depends(get_db)):
+def export_task(task_id: int, embed_credentials: bool = False, db: Session = Depends(get_db)):
     """导出任务包为 zip：自包含脚本 + 外部配置文件（task_config.json）。
 
-    配置文件含 username / password / output_dir，使用者在小龙虾等调度平台
-    上只需改配置文件即可（密码预填与否由 embed_credentials 控制）。
+    默认**不**内嵌密码（安全默认），使用者在 task_config.json 中自行填写，
+    或留空走环境变量 NEWPRA_TASK_PASSWORD；内部交付场景可传
+    embed_credentials=true 预填密码。
     """
     import io
     import zipfile

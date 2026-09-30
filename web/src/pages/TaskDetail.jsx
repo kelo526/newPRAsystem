@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   Card, Descriptions, Table, Tag, Button, Drawer, Timeline,
-  Spin, Empty, message, Space, Typography, Modal, Input
+  Spin, Empty, message, Space, Typography, Modal, Input, Dropdown
 } from 'antd'
 import {
   PlayCircleOutlined, DownloadOutlined, ReloadOutlined,
@@ -148,9 +148,20 @@ export default function TaskDetail() {
           <Button icon={<SyncOutlined />} onClick={() => navigate(`/wizard?profileId=${task.profile_id}`)}>
             更新页面档案
           </Button>
-          <Button icon={<ExportOutlined />} href={`/api/tasks/${task.id}/export`} target="_blank">
-            导出任务包
-          </Button>
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'plain', label: '导出任务包（不含密码，交付时自行填写）' },
+                { key: 'embed', label: '导出任务包（预填密码，仅内部交付）' },
+              ],
+              onClick: ({ key }) => window.open(
+                `/api/tasks/${task.id}/export${key === 'embed' ? '?embed_credentials=true' : ''}`,
+                '_blank'
+              ),
+            }}
+          >
+            <Button icon={<ExportOutlined />}>导出任务包</Button>
+          </Dropdown>
           <Button icon={<SaveOutlined />} onClick={() => setTplOpen(true)}>
             保存为模板
           </Button>

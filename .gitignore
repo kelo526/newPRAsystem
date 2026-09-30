@@ -7,7 +7,7 @@ pg_pw.txt
 server/.env
 
 # ===== 运行时数据（启动后自动重建）=====
-server/newpra.db
+server/newpra.db*
 server/sessions/
 server/tasks/
 server/artifacts/
@@ -15,6 +15,10 @@ server/m2_state.json
 server/profiles/session_*.json
 server/diag_*/
 server/diag_*.png
+
+# ===== 构建产物 =====
+web/dist/
+demo-target/dist/
 
 # ===== 依赖与缓存 =====
 node_modules/

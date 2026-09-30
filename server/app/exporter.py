@@ -77,21 +77,13 @@ TASK["login"]["username"] = CFG.get("username") or TASK["login"]["username"]
 TASK["login"]["password"] = CFG.get("password") or os.environ.get("NEWPRA_TASK_PASSWORD", "")
 OUTPUT_DIR = CFG.get("output_dir") or "exports"
 
-# ---------------- 登录候选链（中英文/属性多重匹配） ----------------
-# 末尾的 id / 组件库类名是兜底（Element UI / XUI 登录页常无 name 属性）
-USERNAME_CANDIDATES = [
-    "input[placeholder*='用户名']", "input[placeholder*='账号']",
-    "input[placeholder*='user' i]", "input[name='username' i]",
-    "input[name='user' i]", "input[name='account' i]",
-    "input[autocomplete='username']", "input[type='email']",
-    "#username", "#user", "#account",
-    "input.el-input__inner", "input.xui-input__inner",
-]
-PASSWORD_CANDIDATES = ["input[type='password']", "input[placeholder*='密码']"]
-SUBMIT_CANDIDATES = [
-    "button[type='submit']", "button:has-text('登 录')", "button:has-text('登录')",
-    "button:has-text('Login')", "button:has-text('Sign in')", "input[type='submit']",
-]
+# ---------------- 登录候选链（生成时由平台注入，与 engine/parser/browser.py 单源同步） ----------------
+LOGIN_CANDIDATES = json.loads(r"""
+__LOGIN_CANDIDATES__
+""")
+USERNAME_CANDIDATES = LOGIN_CANDIDATES["username"]
+PASSWORD_CANDIDATES = LOGIN_CANDIDATES["password"]
+SUBMIT_CANDIDATES = LOGIN_CANDIDATES["submit"]
 
 
 def pick_selector(page, candidates, label, timeout_each=2500):
@@ -110,6 +102,12 @@ def perform_login(page, login_cfg):
     submit_sels = [login_cfg["submit_selector"]] if login_cfg.get("submit_selector") else SUBMIT_CANDIDATES
 
     page.goto(login_cfg["url"], wait_until="domcontentloaded", timeout=60000)
+
+    # 登录前置点击（两步式门户）：先依次点击入口元素，真实登录表单出现后再走候选链
+    for click_sel in login_cfg.get("pre_clicks") or []:
+        page.locator(click_sel).first.click(timeout=10000)
+        page.wait_for_timeout(1500)
+
     user_sel = pick_selector(page, user_sels, "用户名输入框")
     pwd_sel = pick_selector(page, pwd_sels, "密码输入框")
     submit_sel = pick_selector(page, submit_sels, "登录按钮")
@@ -122,14 +120,24 @@ def perform_login(page, login_cfg):
         page.fill(pwd_sel, login_cfg["password"])
     page.locator(submit_sel).first.click()
 
+    # 登录成功判定（与平台 engine/parser/browser.py 同步）：
+    # 以"提交登录那一刻的页面"为基准——URL 离开该页或用户名输入框消失即成功。
+    # 不能用配置的登录入口 URL 判定：两步式门户（pre_clicks）下提交时已在
+    # 真实登录表单页，以入口 URL 判定会立刻误判成功。连续两次采样一致才认为稳定。
+    submit_url = page.url
     login_base = login_cfg["url"].split("?")[0]
     deadline = time.time() + 15
     last_url = None
     while time.time() < deadline:
         url = page.url
         user_gone = page.locator(user_sel).count() == 0
-        if (login_base not in url and "auth/login" not in url.lower()) or user_gone:
+        left_login = user_gone or (url != submit_url and login_base not in url and "auth/login" not in url.lower())
+        if left_login:
             if url == last_url:
+                try:
+                    page.wait_for_load_state("domcontentloaded", timeout=15000)
+                except Exception:
+                    pass
                 return
             last_url = url
         time.sleep(0.5)
@@ -453,7 +461,7 @@ def run(out_dir: Path, headless: bool):
         page.goto("about:blank")
         page.goto(PROFILE["url"], wait_until="domcontentloaded", timeout=60000)
         page.wait_for_selector(
-            ".ant-form-item, .el-form-item, .el-select, .oxd-input-group, select, input:not([type=hidden])",
+            ".ant-form-item, .el-form-item, .xui-form-item, .el-select, .xui-select, .oxd-input-group, select, input:not([type=hidden])",
             timeout=30000, state="attached")
         page.screenshot(path=str(out_dir / "01_opened.png"))
 
@@ -530,11 +538,19 @@ if __name__ == "__main__":
 
 def export_task_script(task, profile, system) -> str:
     """生成自包含任务脚本内容（不含凭证，凭证在外部 task_config.json）。"""
+    # 候选链单源：从平台 browser.py 取值注入，避免模板与平台两处维护漂移
+    from engine.parser.browser import PASSWORD_CANDIDATES, SUBMIT_CANDIDATES, USERNAME_CANDIDATES
+
     login = {
         "url": system.login_url,
         "username": system.username,
         "password": "",
     }
+    # 显式登录选择器 / 两步式门户前置点击一并导出，独立脚本行为与平台一致
+    for key in ("username_selector", "password_selector", "submit_selector", "pre_clicks"):
+        value = getattr(system, key, None)
+        if value:
+            login[key] = value
     task_data = {
         "name": task.name,
         "login": login,
@@ -548,6 +564,11 @@ def export_task_script(task, profile, system) -> str:
         "actions": profile.actions or [],
     }
     cron = (task.schedule or {}).get("cron", "")
+    candidates = {
+        "username": USERNAME_CANDIDATES,
+        "password": PASSWORD_CANDIDATES,
+        "submit": SUBMIT_CANDIDATES,
+    }
     return (
         TEMPLATE
         .replace("__TASK_NAME__", task.name)
@@ -555,6 +576,7 @@ def export_task_script(task, profile, system) -> str:
         .replace("__CRON__", cron)
         .replace("__TASK_JSON__", json.dumps(task_data, ensure_ascii=False, indent=2))
         .replace("__PROFILE_JSON__", json.dumps(profile_data, ensure_ascii=False, indent=2))
+        .replace("__LOGIN_CANDIDATES__", json.dumps(candidates, ensure_ascii=False, indent=2))
     )
 
 

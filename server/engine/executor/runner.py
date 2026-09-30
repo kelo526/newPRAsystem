@@ -20,7 +20,7 @@ from . import adapters, matcher
 
 DL_TEXT_RE = re.compile(r"下\s*载|download|保存到本地|导出到本地", re.I)
 DL_LINK_SEL = 'a[href$=".xlsx"], a[href$=".xls"], a[href$=".csv"], a[download]'
-# 导出中心（如荣耀工作台"我的导出"）：下载入口是文件名链接，href 无扩展名，
+# 导出中心（如企业内网工作台"我的导出"）：下载入口是文件名链接，href 无扩展名，
 # 需按链接文本识别；生成中的记录（执行中/生成中）不可点，等状态翻转后再点
 DL_FILENAME_RE = re.compile(r"\.(xlsx|xls|csv|zip)\s*$", re.I)
 DL_BUSY_RE = re.compile(r"执行中|生成中|排队中|处理中|导出中")
@@ -106,7 +106,7 @@ def _scan_download_entries(p, t_export=None):
                 continue
     except Exception:
         pass
-    # 导出中心条目（如荣耀工作台"我的导出"）：文件名是 div.item-title 而非 <a>，
+    # 导出中心条目（如企业内网工作台"我的导出"）：文件名是 div.item-title 而非 <a>，
     # 逐条扫 li.container-item，标题按文件名后缀识别，整行文本判断是否生成中
     try:
         items = p.locator(".my-export-container li.container-item")
@@ -266,10 +266,10 @@ def find_action(profile, name):
 # ---------- 登录后角色切换 ----------
 
 def apply_role_switch(page, url, role_name, step):
-    """切换页面右上角个人权限角色（如荣耀工作台"自制BA"）。
+    """切换页面右上角个人权限角色（部分企业工作台的账号级角色）。
 
     角色是账号级状态（任意会话切换会影响所有会话），且决定功能可用性
-    （如导出按钮置灰）。角色不符时自动点击头部角色胶囊切换，并重新加载目标页。
+    （目标角色未激活时导出按钮置灰）。角色不符时自动点击头部角色胶囊切换，并重新加载目标页。
     """
     try:
         active = page.evaluate(
