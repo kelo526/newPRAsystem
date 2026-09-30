@@ -31,6 +31,7 @@ export default function Systems() {
       username: record.username, password: '',
       username_selector: record.username_selector,
       password_selector: record.password_selector,
+      role_name: record.role_name || '',
       pre_clicks_text: (record.pre_clicks || []).join('\n'),
     })
     setOpen(true)
@@ -185,6 +186,13 @@ export default function Systems() {
               rows={2}
               placeholder={"text=进入系统\n#start-btn"}
             />
+          </Form.Item>
+          <Form.Item
+            name="role_name"
+            label="登录后切换个人权限角色（可选）"
+            extra="部分系统按角色开放功能（如荣耀工作台选「自制BA」才能导出）。填写角色名后，任务运行时自动检查并切换右上角角色"
+          >
+            <Input placeholder="如：自制BA" />
           </Form.Item>
         </Form>
       </Modal>

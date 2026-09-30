@@ -12,17 +12,24 @@ def field_selector(page, field):
         return sel
 
     comp = field["locator"]["component"]
-    component_sel = {
-        "antd_select": ".ant-select",
-        "antd_date_range": ".ant-picker",
-        "antd_input": "input",
-        "antd_textarea": "textarea",
-        "antd_upload": ".ant-upload",
+    # comp -> (表单项容器, 标签选择器, 组件选择器)
+    layout = {
+        "antd_select": (".ant-form-item", ".ant-form-item-label label", ".ant-select"),
+        "antd_date_range": (".ant-form-item", ".ant-form-item-label label", ".ant-picker"),
+        "antd_input": (".ant-form-item", ".ant-form-item-label label", "input"),
+        "antd_textarea": (".ant-form-item", ".ant-form-item-label label", "textarea"),
+        "antd_upload": (".ant-form-item", ".ant-form-item-label label", ".ant-upload"),
+        "xui_select": (".xui-form-item", ".xui-form-item__label", ".xui-select"),
+        "xui_input": (".xui-form-item", ".xui-form-item__label", ".xui-input"),
+        "xui_radio": (".xui-form-item", ".xui-form-item__label", ".xui-radio-group"),
+        "xui_checkbox": (".xui-form-item", ".xui-form-item__label", ".xui-checkbox-group"),
+        "xui_date_range": (".xui-form-item", ".xui-form-item__label", ".xui-date-editor"),
     }.get(comp)
-    if component_sel:
+    if layout:
+        item_sel, label_sel, component_sel = layout
         for label in field["locator"]["labels"]:
             fallback = (
-                f'.ant-form-item:has(.ant-form-item-label label:has-text("{label}")) '
+                f'{item_sel}:has({label_sel}:has-text("{label}")) '
                 f'{component_sel}'
             )
             if _alive(page, fallback):

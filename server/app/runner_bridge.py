@@ -161,6 +161,8 @@ def _run_task(task_id: int, trigger: str):
             "config": task.config,
             "pre_actions": task.pre_actions,
             "action": task.action,
+            "export_timeout": getattr(task, "export_timeout", None) or 180,
+            "role_switch": getattr(system, "role_name", "") or None,
         }
         profile_dict = {
             "url": profile.target_url,

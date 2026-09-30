@@ -7,18 +7,23 @@ def normalize_fields(raw_fields):
         "antd_select": "select",
         "el_select": "select",
         "oxd_select": "select",
+        "xui_select": "select",
         "native_select": "select",
         "antd_date_range": "date_range",
         "el_date_range": "date_range",
+        "xui_date_range": "date_range",
         "antd_input": "text",
         "el_input": "text",
         "oxd_input": "text",
+        "xui_input": "text",
         "native_input": "text",
         "antd_textarea": "textarea",
         "native_textarea": "textarea",
         "antd_upload": "upload",
         "antd_radio": "radio",
         "antd_checkbox": "checkbox",
+        "xui_radio": "radio",
+        "xui_checkbox": "checkbox",
     }
 
     fields = []

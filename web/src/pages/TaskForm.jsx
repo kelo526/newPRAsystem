@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   Form, Input, Select, Button, Radio, Space, DatePicker, Switch,
-  Divider, Tag, message, InputNumber, Typography
+  Divider, Tag, message, InputNumber, Typography, AutoComplete
 } from 'antd'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -52,10 +52,15 @@ function FieldControl({ field, value, onChange }) {
     )
   }
   if (field.type === 'select') {
+    // AutoComplete：可选解析出的选项，也允许手动输入（如树形下拉中未展开的子节点）
     return (
-      <Select
-        style={{ width: 240 }} allowClear placeholder={`选择${field.semantic_name}`}
+      <AutoComplete
+        style={{ width: 240 }} allowClear
+        placeholder={`选择或输入${field.semantic_name}`}
         options={field.options?.map((o) => ({ label: o, value: o })) || []}
+        filterOption={(input, option) =>
+          (option?.value || '').toLowerCase().includes(input.toLowerCase())
+        }
         value={value}
         onChange={onChange}
       />
@@ -69,6 +74,15 @@ function FieldControl({ field, value, onChange }) {
         options={field.options?.map((o) => ({ label: o, value: o })) || []}
         value={value}
         onChange={onChange}
+      />
+    )
+  }
+  if (field.type === 'radio') {
+    return (
+      <Radio.Group
+        options={field.options?.map((o) => ({ label: o, value: o })) || []}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
       />
     )
   }
@@ -101,6 +115,7 @@ export default function TaskForm({ initial = null, onSaved }) {
   const [deliveryTo, setDeliveryTo] = useState('')
   const [feishuWebhook, setFeishuWebhook] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const [exportTimeout, setExportTimeout] = useState(180)
   const [noProfiles, setNoProfiles] = useState(false)
   const [searchParams] = useSearchParams()
 
@@ -152,6 +167,7 @@ export default function TaskForm({ initial = null, onSaved }) {
         setDeliveryTo((t.delivery?.to || []).join(','))
         setFeishuWebhook(t.delivery?.webhook || '')
         setRetryCount(t.retry_count || 0)
+        setExportTimeout(t.export_timeout || 180)
         return api.get(`/api/profiles/${t.profile_id}`)
       })
       .then((p) => { if (p) setProfile(p) })
@@ -189,7 +205,8 @@ export default function TaskForm({ initial = null, onSaved }) {
       action,
       schedule: { enabled: cronEnabled, cron: cronEnabled ? cron : '' },
       delivery,
-      retry_count: retryCount
+      retry_count: retryCount,
+      export_timeout: exportTimeout
     }
     try {
       if (initial) {
@@ -325,6 +342,16 @@ export default function TaskForm({ initial = null, onSaved }) {
         />
         <Typography.Text type="secondary">
           执行失败后自动重试（0~5 次），重试时强制重新登录；连续 2 次失败将按通知方式告警
+        </Typography.Text>
+      </Space>
+      <Space align="center" size={12} style={{ marginTop: 12 }}>
+        <span>导出等待上限（秒）：</span>
+        <InputNumber
+          min={30} max={3600} step={60} value={exportTimeout}
+          onChange={(v) => setExportTimeout(v || 180)}
+        />
+        <Typography.Text type="secondary">
+          导出中心异步生成文件的场景（如荣耀工作台「我的导出」），生成可能需数分钟，建议 600 秒以上
         </Typography.Text>
       </Space>
 

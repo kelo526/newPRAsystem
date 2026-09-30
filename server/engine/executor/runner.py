@@ -12,7 +12,7 @@
 import json
 import re
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from ..parser import browser
@@ -20,6 +20,47 @@ from . import adapters, matcher
 
 DL_TEXT_RE = re.compile(r"下\s*载|download|保存到本地|导出到本地", re.I)
 DL_LINK_SEL = 'a[href$=".xlsx"], a[href$=".xls"], a[href$=".csv"], a[download]'
+# 导出中心（如荣耀工作台"我的导出"）：下载入口是文件名链接，href 无扩展名，
+# 需按链接文本识别；生成中的记录（执行中/生成中）不可点，等状态翻转后再点
+DL_FILENAME_RE = re.compile(r"\.(xlsx|xls|csv|zip)\s*$", re.I)
+DL_BUSY_RE = re.compile(r"执行中|生成中|排队中|处理中|导出中")
+ROW_TIME_RE = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})")
+
+
+def _panel_visible(page):
+    try:
+        return page.locator(".my-export-container").first.is_visible()
+    except Exception:
+        return False
+
+
+def _refresh_export_panel(page, step):
+    """关闭并重新打开"我的导出"面板以刷新记录状态。
+
+    面板的"执行中/执行成功"文本不自动刷新——服务端文件早已生成完毕，
+    前端却仍显示执行中，导致下载入口一直被判定为不可点。
+    """
+    try:
+        if _panel_visible(page):
+            closed = False
+            for sel in (".my-export-container [class*='close']",
+                        ".my-export-container .xui-icon-close",
+                        ".my-export-container i"):
+                loc = page.locator(sel)
+                if loc.count() > 0:
+                    loc.first.click()
+                    page.wait_for_timeout(600)
+                    closed = not _panel_visible(page)
+                    if closed:
+                        break
+            if not closed:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(600)
+        page.locator("span.download.xui-popover__reference").first.click()
+        page.wait_for_timeout(1500)
+        step("  已刷新「我的导出」面板状态")
+    except Exception as e:  # noqa: BLE001 —— 刷新失败不中断，下一轮再试
+        step(f"  刷新导出面板失败：{e}")
 
 
 def _entry_key(el):
@@ -34,8 +75,13 @@ def _entry_key(el):
         return (None, None)
 
 
-def _scan_download_entries(p):
-    """返回 [(key, locator)]：页面当前全部可见下载入口（文件链接 + 下载文本按钮）。"""
+def _scan_download_entries(p, t_export=None):
+    """返回 [(key, locator, busy)]：页面当前全部可见下载入口（文件链接 + 下载文本按钮）。
+
+    busy=True 表示导出中心里"生成中"的记录：面板打开后状态文本不自动刷新，
+    服务端可能早已生成完毕，因此对 busy 入口做限频重试点击，而非干等状态翻转。
+    t_export：本次点击导出按钮的时刻，早于它的记录是旧运行遗留，不下载。
+    """
     entries = []
     try:
         links = p.locator(DL_LINK_SEL)
@@ -43,7 +89,7 @@ def _scan_download_entries(p):
             el = links.nth(i)
             try:
                 if el.is_visible():
-                    entries.append((_entry_key(el), el))
+                    entries.append((_entry_key(el), el, False))
             except Exception:
                 continue
     except Exception:
@@ -55,7 +101,35 @@ def _scan_download_entries(p):
                     continue
                 t = (el.text_content() or "").strip()
                 if t and DL_TEXT_RE.search(t):
-                    entries.append((_entry_key(el), el))
+                    entries.append((_entry_key(el), el, False))
+            except Exception:
+                continue
+    except Exception:
+        pass
+    # 导出中心条目（如荣耀工作台"我的导出"）：文件名是 div.item-title 而非 <a>，
+    # 逐条扫 li.container-item，标题按文件名后缀识别，整行文本判断是否生成中
+    try:
+        items = p.locator(".my-export-container li.container-item")
+        for i in range(min(items.count(), 15)):
+            el = items.nth(i)
+            try:
+                if not el.is_visible():
+                    continue
+                title = el.locator(".item-title").first
+                t = (title.text_content() or "").strip()
+                if not t or not DL_FILENAME_RE.search(t):
+                    continue
+                row_text = (el.text_content() or "").strip()
+                # 只认本次导出之后创建的记录（防止捡到旧运行的文件）
+                m = ROW_TIME_RE.search(row_text)
+                if t_export and m:
+                    try:
+                        ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
+                        if ts < t_export - 90:
+                            continue
+                    except Exception:
+                        pass
+                entries.append(((t[:16], row_text[:80]), title, bool(DL_BUSY_RE.search(row_text))))
             except Exception:
                 continue
     except Exception:
@@ -83,13 +157,15 @@ def _hunt_download(page, action_sel, out_dir, step, timeout=180):
         downloads.append(d)
 
     page.on("download", _on_download)
+    t_export = time.time()
     # 基线：点击导出前页面已有的下载入口（如导出中心里他人已生成的记录）
-    baseline = {key for key, _ in _scan_download_entries(page)}
+    baseline = {key for key, _, _ in _scan_download_entries(page)}
 
     page.locator(action_sel).first.click()
 
     deadline = time.time() + timeout
-    clicked = set()
+    clicked = {}  # key -> 上次点击时间（busy 入口限频重试，就绪入口只点一次）
+    last_refresh = time.time()
     while time.time() < deadline:
         if downloads:
             d = downloads.pop(0)
@@ -105,15 +181,26 @@ def _hunt_download(page, action_sel, out_dir, step, timeout=180):
                 np.on("download", _on_download)
                 step(f"  检测到新页面：{(np.url or '')[:80]}")
 
+        # 定期刷新导出面板（其状态文本不自动刷新）
+        if time.time() - last_refresh > 30:
+            _refresh_export_panel(page, step)
+            last_refresh = time.time()
+
         # 在所有页面中寻找"新增"下载入口并点击
         for np in context.pages:
             try:
-                for key, el in _scan_download_entries(np):
-                    if key in baseline or key in clicked:
+                for key, el, busy in _scan_download_entries(np, t_export=t_export):
+                    if key in baseline:
+                        continue
+                    # 就绪入口只点一次；生成中入口每 10s 重试（面板状态不自动刷新，
+                    # 服务端可能已生成完毕，点击就绪即触发下载，未就绪则无副作用）
+                    min_interval = 10 if busy else 3600
+                    if time.time() - clicked.get(key, 0) < min_interval:
                         continue
                     el.click()
-                    clicked.add(key)
-                    step(f"  已点击新增下载入口「{key[0] or '文件链接'}」")
+                    clicked[key] = time.time()
+                    step(f"  已点击下载入口「{key[0] or '文件链接'}」"
+                         f"{'（生成中，限频重试）' if busy else ''}")
                     break
             except Exception:
                 continue
@@ -176,6 +263,42 @@ def find_action(profile, name):
     return None
 
 
+# ---------- 登录后角色切换 ----------
+
+def apply_role_switch(page, url, role_name, step):
+    """切换页面右上角个人权限角色（如荣耀工作台"自制BA"）。
+
+    角色是账号级状态（任意会话切换会影响所有会话），且决定功能可用性
+    （如导出按钮置灰）。角色不符时自动点击头部角色胶囊切换，并重新加载目标页。
+    """
+    try:
+        active = page.evaluate(
+            "() => { const a = document.querySelector('a.main-role.isActive');"
+            " return a ? a.textContent.trim() : ''; }"
+        )
+    except Exception:
+        active = ""
+    if active == role_name:
+        step(f"个人权限角色已是「{role_name}」，跳过切换")
+        return
+    step(f"切换个人权限角色：{active or '(未知)'} → {role_name}")
+    trigger = (
+        "#wp_plant_header .navbar-right .xui-dropdown, "
+        "[class*='change-dropdown'] .xui-dropdown"
+    )
+    page.locator(trigger).first.click()
+    page.wait_for_timeout(800)
+    page.locator("a.main-role", has_text=role_name).first.click()
+    page.wait_for_timeout(2000)
+    # 切换角色通常伴随页面刷新，重新进入目标页
+    try:
+        page.goto("about:blank")
+        page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        browser._wait_page_ready(page)
+    except Exception as e:  # noqa: BLE001 —— 重载失败不阻断，交给后续步骤报错
+        step(f"角色切换后重新加载页面异常：{e}")
+
+
 # ---------- 主流程 ----------
 
 def run(task, profile, out_dir, headless=True, state_file=None):
@@ -194,6 +317,11 @@ def run(task, profile, out_dir, headless=True, state_file=None):
             profile["url"], task.get("login"), headless=headless, state_file=state_file
         )
         page.screenshot(path=str(out / "01_opened.png"))
+
+        # 0. 登录后角色切换（配置了目标角色且当前不符时）
+        if task.get("role_switch"):
+            apply_role_switch(page, profile["url"], task["role_switch"], step)
+            page.screenshot(path=str(out / "01b_role_switched.png"))
 
         # 1. 逐字段回填（现场重新定位，不用缓存的旧 selector）
         for name, value in task["config"].items():

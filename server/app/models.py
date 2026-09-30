@@ -32,6 +32,8 @@ class TargetSystem(Base):
     submit_selector: Mapped[str] = mapped_column(String(500), default="")
     # 登录前置点击（两步式门户）：如 ["text=进入系统"]，在登录页依次点击后再登录
     pre_clicks: Mapped[list] = mapped_column(JSON, default=list)
+    # 登录后切换页面右上角个人权限角色（如荣耀工作台"自制BA"，角色是账号级状态且影响功能可用性）
+    role_name: Mapped[str] = mapped_column(String(120), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
 
     profiles: Mapped[list["PageProfile"]] = relationship(back_populates="system")
@@ -86,6 +88,7 @@ class Task(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     # 可靠性配置（影刀借鉴）：失败自动重试次数；外部触发令牌
     retry_count: Mapped[int] = mapped_column(Integer, default=0)   # 失败后自动重试次数
+    export_timeout: Mapped[int] = mapped_column(Integer, default=180)  # 导出中心异步生成等待上限（秒）
     trigger_token: Mapped[str] = mapped_column(String(64), unique=True)  # webhook 外部触发
     last_run_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

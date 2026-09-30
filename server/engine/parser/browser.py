@@ -11,16 +11,26 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, Page
 
 # 用户名输入框候选链（依次探测，第一个可见者胜出）
+# 末尾的 id / 组件库类名是兜底：Element UI / XUI 登录页（如荣耀统一门户
+# "邮箱地址、手机号码或账号名"）常无 name 属性，且 placeholder 多样
 USERNAME_CANDIDATES = [
     "input[placeholder*='用户名']",
     "input[placeholder*='账号']",
     "input[placeholder*='用户' i]",
+    "input[placeholder*='邮箱']",
+    "input[placeholder*='手机']",
+    "input[placeholder*='工号']",
     "input[name='username' i]",
     "input[name='user' i]",
     "input[name='account' i]",
     "input[name='loginname' i]",
     "input[autocomplete='username']",
     "input[type='email']",
+    "#username",
+    "#user",
+    "#account",
+    "input.el-input__inner",
+    "input.xui-input__inner",
 ]
 PASSWORD_CANDIDATES = [
     "input[type='password']",
@@ -213,11 +223,13 @@ def _grab_login_error(page: Page) -> str:
 
 
 def _wait_page_ready(page: Page, timeout=30000):
-    """等待任意可配置元素渲染完成（组合选择器一次等待，覆盖 AntD/Element/原生）。"""
-    ready = ".ant-form-item, .el-form-item, .el-select, select, input:not([type=hidden])"
+    """等待任意可配置元素渲染完成（组合选择器一次等待，覆盖 AntD/Element/XUI/原生）。"""
+    ready = ".ant-form-item, .el-form-item, .xui-form-item, .el-select, .xui-select, select, input:not([type=hidden])"
     try:
         # 解析提取只关心 DOM 挂载，不要求可见（首个 input 常为 el-select 只读触发框）
         page.wait_for_selector(ready, timeout=timeout, state="attached")
+        # SPA 表单项分批异步挂载：首个控件出现后，再等其余字段渲染完成
+        page.wait_for_timeout(2000)
     except Exception as e:
         raise TimeoutError("页面未检测到任何可配置元素") from e
 
