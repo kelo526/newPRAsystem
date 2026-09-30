@@ -512,8 +512,10 @@ def run(out_dir: Path, headless: bool):
         print(f"\n✗ 任务失败：{e}\n  证据目录：{out_dir}")
         return 1
     finally:
-        browser.close()
-        pw.stop()
+        try:
+            browser.close()
+        finally:
+            pw.stop()
 
 
 def main():

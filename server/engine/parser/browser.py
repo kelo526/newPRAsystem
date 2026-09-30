@@ -112,10 +112,17 @@ def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
 
 
 def _redirected_to_login(page: Page, login_cfg) -> bool:
-    """判断当前页是否被重定向回了登录页（会话失效的典型表现）。"""
+    """判断当前页是否被重定向回了登录页（会话失效的典型表现）。
+
+    登录入口按路径边界匹配：配置 https://x.com/app 时不应误匹配
+    https://x.com/app2/... 的目标页（子串判断会每次都误判会话失效）。
+    """
     url = page.url
-    login_base = login_cfg["url"].split("?")[0]
-    return login_base in url or "auth/login" in url.lower() or url.rstrip("/").endswith("/login")
+    login_base = login_cfg["url"].split("?")[0].rstrip("/")
+    path = url.split("?")[0].rstrip("/")
+    if path == login_base or path.startswith(login_base + "/"):
+        return True
+    return "auth/login" in url.lower() or path.endswith("/login")
 
 
 def _pick_selector(page: Page, candidates, label: str, timeout_each=2500):
@@ -235,5 +242,9 @@ def _wait_page_ready(page: Page, timeout=30000):
 
 
 def shutdown(pw, browser):
-    browser.close()
-    pw.stop()
+    try:
+        browser.close()
+    finally:
+        # close 异常也必须停掉 playwright，否则同进程后续 start() 会报
+        # "Sync API inside the asyncio loop"
+        pw.stop()

@@ -142,11 +142,33 @@ def _merge_profile(old_fields, old_actions, new_fields, new_actions):
     return merged_fields, merged_actions, {"added": added, "removed": removed}
 
 
-def start_task_thread(task_id: int, trigger: str = "manual"):
+_running_tasks: set[int] = set()
+_running_lock = threading.Lock()
+
+
+def start_task_thread(task_id: int, trigger: str = "manual") -> bool:
+    """后台线程执行任务。
+
+    同一任务同时只允许一个运行实例（手动/定时/webhook 三种触发共用此守卫，
+    防止并行跑两个浏览器对目标系统产生双份操作）；已在运行时返回 False。
+    """
+    with _running_lock:
+        if task_id in _running_tasks:
+            return False
+        _running_tasks.add(task_id)
     threading.Thread(target=_run_task, args=(task_id, trigger), daemon=True).start()
+    return True
 
 
 def _run_task(task_id: int, trigger: str):
+    try:
+        _run_task_impl(task_id, trigger)
+    finally:
+        with _running_lock:
+            _running_tasks.discard(task_id)
+
+
+def _run_task_impl(task_id: int, trigger: str):
     from engine.executor import runner
 
     with SessionLocal() as session:
@@ -189,10 +211,12 @@ def _run_task(task_id: int, trigger: str):
     last_err = ""
     for attempt in range(1, retry_count + 2):
         if attempt > 1:
-            run.status = "retrying"
             with SessionLocal() as session:
                 r = session.get(TaskRun, run_id)
-                r.steps = [{"msg": f"第 {attempt - 1} 次执行失败，自动重试（{attempt}/{retry_count + 1}）..."}]
+                r.status = "retrying"
+                r.steps = (r.steps or []) + [
+                    {"msg": f"第 {attempt - 1} 次执行失败，自动重试（{attempt}/{retry_count + 1}）..."}
+                ]
                 session.commit()
             events.publish_run(task_id, run_id, "retrying", attempt)
             print(f"[retry] 任务 {task_id} 第 {attempt} 轮执行")

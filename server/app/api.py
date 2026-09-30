@@ -205,7 +205,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
         schedule=payload.schedule,
         delivery=payload.delivery,
         retry_count=min(max(payload.retry_count or 0, 0), 5),
-        export_timeout=max(payload.export_timeout or 180, 30),
+        export_timeout=min(max(payload.export_timeout or 180, 30), 3600),
         trigger_token=secrets.token_urlsafe(16),
     )
     db.add(task)
@@ -254,7 +254,7 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     if payload.retry_count is not None:
         task.retry_count = min(max(payload.retry_count, 0), 5)
     if payload.export_timeout is not None:
-        task.export_timeout = max(payload.export_timeout, 30)
+        task.export_timeout = min(max(payload.export_timeout, 30), 3600)
     db.commit()
     db.refresh(task)
     scheduler.sync_task(task)
@@ -272,7 +272,8 @@ def trigger_by_webhook(token: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "触发令牌无效")
     if not task.enabled:
         raise HTTPException(409, "任务已停用，请先启用")
-    runner_bridge.start_task_thread(task.id, trigger="webhook")
+    if not runner_bridge.start_task_thread(task.id, trigger="webhook"):
+        raise HTTPException(409, "任务正在运行中，已拒绝重复触发")
     return {"task_id": task.id, "task_name": task.name, "status": "accepted"}
 
 
@@ -296,7 +297,8 @@ def run_task_now(task_id: int, db: Session = Depends(get_db)):
     task = db.get(Task, task_id)
     if not task:
         raise HTTPException(404, "任务不存在")
-    runner_bridge.start_task_thread(task_id, trigger="manual")
+    if not runner_bridge.start_task_thread(task_id, trigger="manual"):
+        raise HTTPException(409, "任务正在运行中，请等待完成或查看运行历史")
     return {"status": "accepted"}
 
 
@@ -379,7 +381,7 @@ def list_runs(task_id: int | None = None, limit: int = 50, db: Session = Depends
     q = db.query(TaskRun).order_by(TaskRun.id.desc())
     if task_id:
         q = q.filter(TaskRun.task_id == task_id)
-    return q.limit(min(limit, 200)).all()
+    return q.limit(max(min(limit, 200), 1)).all()
 
 
 @router.get("/runs/{run_id}", response_model=TaskRunOut)
@@ -395,7 +397,8 @@ def get_run_file(run_id: int, file_path: str):
     """下载运行产物（导出文件/截图/运行摘要）。"""
     base = (runner_bridge.ARTIFACTS_DIR / f"run_{run_id}").resolve()
     target = (base / file_path).resolve()
-    if not str(target).startswith(str(base)):
+    # 必须用父子关系判断而不是字符串前缀：否则 run_1 能借 ../ 读到 run_10 的产物
+    if base not in target.parents:
         raise HTTPException(400, "非法路径")
     if not target.is_file():
         raise HTTPException(404, "文件不存在")
