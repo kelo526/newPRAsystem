@@ -29,3 +29,6 @@ venv/
 
 # 一次性验证/诊断脚本
 server/verify_*.py
+
+# 前端构建产物（setup.bat / start.bat 自动生成）
+web/dist/

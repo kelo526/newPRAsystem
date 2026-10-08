@@ -70,3 +70,8 @@ ALTER TABLE target_systems ADD COLUMN role_name VARCHAR(120) DEFAULT '';
 
 - 「导出任务包」生成的独立脚本对导出中心模式暂不适配（仍为 `expect_download` 直接下载等待），如需交付外部调度平台需移植本套捕获逻辑；
 - XUI 的树形下拉筛选框在本系统不响应输入过滤（自定义组件），回放已用「逐级展开」兜底；其他 XUI 系统若响应筛选则会走更快路径。
+
+## 九、登录候选链扩展与部署脚本更新
+
+- **登录候选链扩展**（`engine/parser/browser.py` / `app/exporter.py`）：`USERNAME_CANDIDATES` 新增 placeholder 邮箱/手机/工号、常见 id（`#username/#user/#account`）与组件库类名兜底（`.el-input__inner / .xui-input__inner`）。荣耀统一门户（placeholder「邮箱地址、手机号码或帐号名」）实测免配置自动命中用户名/密码框；
+- **部署方式升级**：平台前端由 Vite 开发服务器改为 **nginx 发布生产构建**（`web/dist`，端口 9080，局域网可访问），`/api` 反向代理 + SSE 透传（`/api/events` 关闭缓冲）。`start.bat` 默认只启动 后端(8000)+nginx(9080)，`start.bat dev` 才额外启动 Vite(5174) 与模拟业务系统(5173)；`setup.bat` 部署时自动 `npm run build`；`stop.ps1` 增加停止 nginx；删除已不被引用的 `start.ps1`。

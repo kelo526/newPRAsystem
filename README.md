@@ -19,9 +19,10 @@
 ### 方式 A · SQLite，零数据库配置（建议先用这条跑通）
 
 ```text
-1. 双击 setup.bat   安装前后端依赖 + 下载 Playwright Chromium
+1. 双击 setup.bat   安装前后端依赖 + 下载 Playwright Chromium + 构建前端生产产物
                     检测到无 pg17\ 时自动生成 server\.env（DATABASE_URL=sqlite:///./newpra.db），跳过数据库安装
-2. 双击 start.bat   启动全部服务（首次启动自动建表、自动生成凭证加密密钥）
+2. 双击 start.bat   启动后端(8000) + nginx 生产前端(9080)，主入口 http://localhost:9080
+                    （模拟业务系统不默认启动；要体验全流程运行 start.bat dev）
 ```
 
 ### 方式 B · PostgreSQL 完整体验
@@ -35,15 +36,17 @@
 
 | 脚本 | 作用 |
 |---|---|
-| `start.bat` | 一键启动四个服务（已在运行的自动跳过） |
-| `stop.bat`  | 一键停止全部服务 |
+| `start.bat` | 启动后端(8000) + nginx 生产前端(9080)——主入口 |
+| `start.bat dev` | 额外启动 Vite 开发前端(5174) + 模拟业务系统(5173) |
+| `stop.bat` | 一键停止全部服务 |
 
 ### 服务地址
 
 | 服务 | 地址 | 说明 |
 |---|---|---|
-| **平台前端** | http://localhost:5174 | 主入口 |
-| 模拟业务系统 | http://localhost:5173 | 登录 admin / admin123，用于体验全流程 |
+| **平台前端** | http://localhost:9080 | 主入口（nginx 发布生产构建，局域网同事可经 `http://<本机IP>:9080` 访问） |
+| Vite 开发前端 | http://localhost:5174 | 仅 `start.bat dev`（前端热更新开发用） |
+| 模拟业务系统 | http://localhost:5173 | 仅 `start.bat dev`，登录 admin / admin123，用于体验全流程 |
 | 后端 API | http://localhost:8000/api/health | 健康检查 |
 | PostgreSQL | localhost:5433 / 库 `newpra` | 仅方式 B；方式 A 为 SQLite（`server/newpra.db`） |
 
