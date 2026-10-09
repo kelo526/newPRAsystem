@@ -1,5 +1,5 @@
 # ===== 本地运行环境（体积大，不可发布）=====
-# PostgreSQL 17 便携版（约 960MB，不入库；需要 PG 时自行放置或用已装实例，SQLite 模式完全不需要）
+# PostgreSQL 17 便携版（约 960MB，由 setup.ps1 按需下载安装）
 pg17/
 pg_pw.txt
 
@@ -7,7 +7,7 @@ pg_pw.txt
 server/.env
 
 # ===== 运行时数据（启动后自动重建）=====
-server/newpra.db*
+server/newpra.db
 server/sessions/
 server/tasks/
 server/artifacts/
@@ -15,10 +15,6 @@ server/m2_state.json
 server/profiles/session_*.json
 server/diag_*/
 server/diag_*.png
-
-# ===== 构建产物 =====
-web/dist/
-demo-target/dist/
 
 # ===== 依赖与缓存 =====
 node_modules/
@@ -31,11 +27,12 @@ venv/
 # ===== 日志 =====
 *.log
 
-# ===== Windows 本地启动脚本（面向本机环境硬编码，其他电脑不可用，不入库；标准启动方式见 README）=====
-*.bat
-
-# 一次性验证/诊断脚本
+# һ������֤/��Ͻű�
 server/verify_*.py
 
 # ǰ�˹������setup.bat / start.bat �Զ����ɣ�
 web/dist/
+
+# SQLite WAL ����ʱ�ļ�
+server/newpra.db-shm
+server/newpra.db-wal
