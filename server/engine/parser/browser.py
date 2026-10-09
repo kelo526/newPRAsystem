@@ -29,12 +29,14 @@ USERNAME_CANDIDATES = [
     "#username",
     "#user",
     "#account",
+    "#j_username",
     "input.el-input__inner",
     "input.xui-input__inner",
 ]
 PASSWORD_CANDIDATES = [
     "input[type='password']",
     "input[placeholder*='密码']",
+    "#j_password",
 ]
 SUBMIT_CANDIDATES = [
     "button[type='submit']",
@@ -43,6 +45,12 @@ SUBMIT_CANDIDATES = [
     "button:has-text('Login')",
     "button:has-text('Sign in')",
     "input[type='submit']",
+    # Java/SAP 系门户常见：type=button 的图片/文本登录钮（value 承载文本）
+    "input[type='button'][value*='登录']",
+    "input[type='button'][value*='Login' i]",
+    "input[type='button'][value*='登']",
+    "a:has-text('登录')",
+    "a:has-text('Login')",
 ]
 
 
@@ -66,25 +74,67 @@ def open_logged_in_page(target_url, login_cfg, headless=True, state_file=None):
             raise
 
 
+# 企业系统普遍按宽屏设计（如 MPM 的右侧滑出查询面板在窄视口下不渲染）
+DEFAULT_VIEWPORT = {"width": 1920, "height": 1000}
+
+
+def _hover_right_edge(page: Page):
+    """鼠标沿屏幕右缘自上而下扫动，触发"贴边悬停才展开"的滑出面板。
+
+    如 MPM/Smart Factory 的物料追溯查询面板：无入口按钮，鼠标撞到屏幕
+    右缘才滑出。扫一遍无副作用（面板展开后点击其他区域不收回）。
+    """
+    try:
+        w = page.evaluate("() => window.innerWidth")
+        h = page.evaluate("() => window.innerHeight")
+        step = max(60, h // 12)
+        for y in range(int(h * 0.2), int(h * 0.85), step):
+            page.mouse.move(w - 2, y)
+            page.wait_for_timeout(150)
+        page.wait_for_timeout(800)
+    except Exception:
+        pass  # 悬停触发失败不阻断，字段缺失会在后续环节暴露
+
+
+def _navigate_hash_aware(page: Page, target_url: str, timeout=60000):
+    """SPA hash 路由导航（带查询参数的两步法）。
+
+    ExtJS 类应用的 hash 路由若直接携带查询参数（如 home#HINV.view.xxx?queryType=N&…），
+    goto 时框架会把参数拼进控制器脚本的请求导致 404、视图加载失败（静默回落首页）。
+    两步法：先路由到裸 hash（控制器正常加载缓存），再以应用内 hash 跳转追加参数。
+    hash 不带参数的应用（如工作台 Vue Router）行为与普通 goto 完全一致。
+    """
+    if "#" in target_url:
+        base, frag = target_url.split("#", 1)
+        if "?" in frag:
+            page.goto(f"{base}#{frag.split('?')[0]}", wait_until="domcontentloaded", timeout=timeout)
+            page.wait_for_timeout(3000)  # 等控制器脚本加载缓存
+            page.evaluate("h => { location.hash = h }", "#" + frag)
+            page.wait_for_timeout(2000)  # 等带参视图渲染
+            return
+    page.goto(target_url, wait_until="domcontentloaded", timeout=timeout)
+
+
 def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
     # 1. 尝试复用已有会话
     if state_file and Path(state_file).exists() and login_cfg:
         try:
             context = browser.new_context(
-                accept_downloads=True, storage_state=str(state_file)
+                accept_downloads=True, viewport=DEFAULT_VIEWPORT, storage_state=str(state_file)
             )
             page = context.new_page()
             page.goto("about:blank")
-            page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+            _navigate_hash_aware(page, target_url)
             if not _redirected_to_login(page, login_cfg):
                 _wait_page_ready(page)
+                _hover_right_edge(page)
                 return pw, browser, page
             context.close()  # 会话失效，丢弃
         except Exception:
             pass
 
     # 2. 正常登录流程
-    context = browser.new_context(accept_downloads=True)
+    context = browser.new_context(accept_downloads=True, viewport=DEFAULT_VIEWPORT)
     page = context.new_page()
 
     if login_cfg:
@@ -106,16 +156,31 @@ def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
             break
         except Exception:
             continue
-    page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+    _navigate_hash_aware(page, target_url)
     _wait_page_ready(page)
+    _hover_right_edge(page)
     return pw, browser, page
 
 
+def _url_path(url: str) -> str:
+    """取 URL 的 host+path（去协议、去 hash/query），用于登录页判定。"""
+    import re as _re
+    return _re.sub(r"^https?://", "", url).split("#")[0].split("?")[0].rstrip("/")
+
+
 def _redirected_to_login(page: Page, login_cfg) -> bool:
-    """判断当前页是否被重定向回了登录页（会话失效的典型表现）。"""
+    """判断当前页是否被重定向回了登录页（会话失效的典型表现）。
+
+    按路径匹配而非整串子串：登录 URL 可能自带 hash（如
+    home/login#HINV.view.xxx）或与实际跳转的协议不同（http/https），
+    子串匹配会漏判导致在登录页上直接解析。
+    """
     url = page.url
-    login_base = login_cfg["url"].split("?")[0]
-    return login_base in url or "auth/login" in url.lower() or url.rstrip("/").endswith("/login")
+    login_path = _url_path(login_cfg["url"])
+    cur_path = _url_path(url)
+    if cur_path == login_path or cur_path.endswith(login_path) or login_path.endswith(cur_path):
+        return True
+    return "auth/login" in url.lower() or url.rstrip("/").endswith("/login")
 
 
 def _pick_selector(page: Page, candidates, label: str, timeout_each=2500):

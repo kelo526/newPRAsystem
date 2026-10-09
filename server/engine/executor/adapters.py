@@ -204,6 +204,33 @@ class XuiCheckboxAdapter:
             page.wait_for_timeout(200)
 
 
+class ExtInputAdapter:
+    """ExtJS 输入框（selector 直接指向 input.x-form-field）。"""
+
+    component = "ext_input"
+
+    def apply(self, page: Page, selector: str, value):
+        page.locator(selector).first.click()
+        page.locator(selector).first.fill(str(value))
+
+
+class ExtComboAdapter:
+    """ExtJS 下拉：文本填入触发筛选，候选项出现后点选，否则回车确认。"""
+
+    component = "ext_combo"
+
+    def apply(self, page: Page, selector: str, value):
+        page.locator(selector).first.click()
+        page.locator(selector).first.fill(str(value))
+        page.wait_for_timeout(600)
+        option = page.locator(".x-boundlist-item", has_text=str(value))
+        if option.count() > 0:
+            option.first.click()
+        else:
+            page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+
+
 ADAPTERS = {a.component: a() for a in [
     AntDSelectAdapter,
     AntDDateRangeAdapter,
@@ -218,6 +245,8 @@ ADAPTERS = {a.component: a() for a in [
     XuiInputAdapter,
     XuiRadioAdapter,
     XuiCheckboxAdapter,
+    ExtInputAdapter,
+    ExtComboAdapter,
 ]}
 
 

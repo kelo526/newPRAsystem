@@ -84,13 +84,15 @@ USERNAME_CANDIDATES = [
     "input[placeholder*='user' i]", "input[name='username' i]",
     "input[name='user' i]", "input[name='account' i]",
     "input[autocomplete='username']", "input[type='email']",
-    "#username", "#user", "#account",
+    "#username", "#user", "#account", "#j_username",
     "input.el-input__inner", "input.xui-input__inner",
 ]
-PASSWORD_CANDIDATES = ["input[type='password']", "input[placeholder*='密码']"]
+PASSWORD_CANDIDATES = ["input[type='password']", "input[placeholder*='密码']", "#j_password"]
 SUBMIT_CANDIDATES = [
     "button[type='submit']", "button:has-text('登 录')", "button:has-text('登录')",
     "button:has-text('Login')", "button:has-text('Sign in')", "input[type='submit']",
+    "input[type='button'][value*='登录']", "input[type='button'][value*='Login' i]",
+    "input[type='button'][value*='登']", "a:has-text('登录')", "a:has-text('Login')",
 ]
 
 

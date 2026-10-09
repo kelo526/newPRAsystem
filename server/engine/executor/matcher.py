@@ -24,6 +24,8 @@ def field_selector(page, field):
         "xui_radio": (".xui-form-item", ".xui-form-item__label", ".xui-radio-group"),
         "xui_checkbox": (".xui-form-item", ".xui-form-item__label", ".xui-checkbox-group"),
         "xui_date_range": (".xui-form-item", ".xui-form-item__label", ".xui-date-editor"),
+        "ext_input": ("table.x-form-item", ".x-form-item-label", "input.x-form-field"),
+        "ext_combo": ("table.x-form-item", ".x-form-item-label", "input.x-form-field"),
     }.get(comp)
     if layout:
         item_sel, label_sel, component_sel = layout
