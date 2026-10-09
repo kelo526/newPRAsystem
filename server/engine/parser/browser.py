@@ -96,54 +96,6 @@ def _hover_right_edge(page: Page):
         pass  # 悬停触发失败不阻断，字段缺失会在后续环节暴露
 
 
-def _wait_render_settled(page: Page, timeout=120):
-    """等待重型 SPA 完成异步加载（loading 遮罩消失、字段数稳定），并强制一次重布局。
-
-    部分 ExtJS 工作站应用模块加载极慢（进度条可爬行数分钟），且偶发布局不
-    触发（字段堆在原点）。轮询可见 loading 指示器与字段数至稳定，再以窗口
-    尺寸微调强制 ExtJS 重布局。
-    """
-    import time as _time
-    deadline = _time.time() + timeout
-    last, stable = -1, 0
-    while _time.time() < deadline:
-        try:
-            state = page.evaluate("""() => {
-              const n = document.querySelectorAll(
-                'input.x-form-field, input.ant-input, input.el-input__inner, input.xui-input__inner'
-              ).length;
-              let loading = false;
-              const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-              let t;
-              while ((t = walker.nextNode())) {
-                const r = t.parentElement.getBoundingClientRect();
-                if (r.width > 0 && r.height > 0 && /^loading\\.?$/i.test((t.textContent || '').trim())) {
-                  loading = true; break;
-                }
-              }
-              return {n, loading};
-            }""")
-        except Exception:
-            return
-        if not state["loading"] and state["n"] == last and state["n"] > 0:
-            stable += 1
-            if stable >= 2:
-                break
-        else:
-            stable = 0
-        last = state["n"]
-        page.wait_for_timeout(2000)
-    # 强制重布局（连续两次微调尺寸，触发 ExtJS viewport relayout）
-    try:
-        vp = page.viewport_size
-        page.set_viewport_size({"width": vp["width"] + 1, "height": vp["height"]})
-        page.wait_for_timeout(1500)
-        page.set_viewport_size(vp)
-        page.wait_for_timeout(2000)
-    except Exception:
-        pass
-
-
 def _navigate_hash_aware(page: Page, target_url: str, timeout=60000):
     """SPA hash 路由导航（带查询参数的两步法）。
 
@@ -168,15 +120,13 @@ def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
     if state_file and Path(state_file).exists() and login_cfg:
         try:
             context = browser.new_context(
-                accept_downloads=True, viewport=DEFAULT_VIEWPORT, locale="zh-CN",
-                storage_state=str(state_file)
+                accept_downloads=True, viewport=DEFAULT_VIEWPORT, storage_state=str(state_file)
             )
             page = context.new_page()
             page.goto("about:blank")
             _navigate_hash_aware(page, target_url)
             if not _redirected_to_login(page, login_cfg):
                 _wait_page_ready(page)
-                _wait_render_settled(page)
                 _hover_right_edge(page)
                 return pw, browser, page
             context.close()  # 会话失效，丢弃
@@ -184,7 +134,7 @@ def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
             pass
 
     # 2. 正常登录流程
-    context = browser.new_context(accept_downloads=True, viewport=DEFAULT_VIEWPORT, locale="zh-CN")
+    context = browser.new_context(accept_downloads=True, viewport=DEFAULT_VIEWPORT)
     page = context.new_page()
 
     if login_cfg:
@@ -208,7 +158,6 @@ def _open_logged_in_page_impl(pw, browser, target_url, login_cfg, state_file):
             continue
     _navigate_hash_aware(page, target_url)
     _wait_page_ready(page)
-    _wait_render_settled(page)
     _hover_right_edge(page)
     return pw, browser, page
 
@@ -229,13 +178,9 @@ def _redirected_to_login(page: Page, login_cfg) -> bool:
     url = page.url
     login_path = _url_path(login_cfg["url"])
     cur_path = _url_path(url)
-    # 路径边界匹配：相等或互为前缀（要求 "/" 边界），避免 "x.com/app"
-    # 子串误匹配 "x.com/app2/..." 的目标页
-    if (cur_path == login_path
-            or cur_path.startswith(login_path + "/")
-            or login_path.startswith(cur_path + "/")):
+    if cur_path == login_path or cur_path.endswith(login_path) or login_path.endswith(cur_path):
         return True
-    return "auth/login" in url.lower() or cur_path.endswith("/login")
+    return "auth/login" in url.lower() or url.rstrip("/").endswith("/login")
 
 
 def _pick_selector(page: Page, candidates, label: str, timeout_each=2500):
@@ -355,9 +300,5 @@ def _wait_page_ready(page: Page, timeout=30000):
 
 
 def shutdown(pw, browser):
-    try:
-        browser.close()
-    finally:
-        # close 异常也必须停掉 playwright，否则同进程后续 start() 会报
-        # "Sync API inside the asyncio loop"
-        pw.stop()
+    browser.close()
+    pw.stop()
