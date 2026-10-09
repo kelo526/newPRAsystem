@@ -11,7 +11,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, Page
 
 # 用户名输入框候选链（依次探测，第一个可见者胜出）
-# 末尾的 id / 组件库类名是兜底：Element UI / XUI 登录页（如荣耀统一门户
+# 末尾的 id / 组件库类名是兜底：Element UI / XUI 登录页（如统一身份认证门户
 # "邮箱地址、手机号码或账号名"）常无 name 属性，且 placeholder 多样
 USERNAME_CANDIDATES = [
     "input[placeholder*='用户名']",
@@ -74,14 +74,14 @@ def open_logged_in_page(target_url, login_cfg, headless=True, state_file=None):
             raise
 
 
-# 企业系统普遍按宽屏设计（如 MPM 的右侧滑出查询面板在窄视口下不渲染）
+# 企业系统普遍按宽屏设计（如部分 MES 的右侧滑出查询面板在窄视口下不渲染）
 DEFAULT_VIEWPORT = {"width": 1920, "height": 1000}
 
 
 def _hover_right_edge(page: Page):
     """鼠标沿屏幕右缘自上而下扫动，触发"贴边悬停才展开"的滑出面板。
 
-    如 MPM/Smart Factory 的物料追溯查询面板：无入口按钮，鼠标撞到屏幕
+    如某 MES 的条件查询面板：无入口按钮，鼠标撞到屏幕
     右缘才滑出。扫一遍无副作用（面板展开后点击其他区域不收回）。
     """
     try:

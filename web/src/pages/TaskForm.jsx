@@ -352,7 +352,7 @@ export default function TaskForm({ initial = null, onSaved }) {
           onChange={(v) => setExportTimeout(v || 180)}
         />
         <Typography.Text type="secondary">
-          导出中心异步生成文件的场景（如荣耀工作台「我的导出」），生成可能需数分钟，建议 600 秒以上
+          导出中心异步生成文件的场景，生成可能需数分钟，建议 600 秒以上
         </Typography.Text>
       </Space>
 

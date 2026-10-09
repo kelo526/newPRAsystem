@@ -32,7 +32,7 @@ class TargetSystem(Base):
     submit_selector: Mapped[str] = mapped_column(String(500), default="")
     # 登录前置点击（两步式门户）：如 ["text=进入系统"]，在登录页依次点击后再登录
     pre_clicks: Mapped[list] = mapped_column(JSON, default=list)
-    # 登录后切换页面右上角个人权限角色（如荣耀工作台"自制BA"，角色是账号级状态且影响功能可用性）
+    # 登录后切换页面右上角个人权限角色（角色是账号级状态且影响功能可用性）
     role_name: Mapped[str] = mapped_column(String(120), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
 

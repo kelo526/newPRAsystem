@@ -146,7 +146,7 @@ EXTRACT_JS = r"""
     out.fields.push({ ...base, component: 'el_input', placeholder: (inner && inner.placeholder) || '', selector: cssPath(el) });
   });
 
-  // ===== XUI（荣耀内部组件库，Element UI 同源，xui- 前缀） =====
+  // ===== XUI（内部定制组件库，Element UI 同源，xui- 前缀） =====
   document.querySelectorAll('.xui-form-item').forEach((item, idx) => {
     if (!visible(item) || inChrome(item)) return;
     const label = ((item.querySelector('.xui-form-item__label') || {}).textContent || '').trim();
