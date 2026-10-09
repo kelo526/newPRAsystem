@@ -187,10 +187,11 @@ export default function TaskForm({ initial = null, onSaved }) {
     if (!profile) return message.warning('请选择页面档案')
     if (!name) return message.warning('请填写任务名称')
     if (!action) return message.warning('请选择执行动作')
-    if (cronMode === 'custom' && !/^\S+\s+\S+\s+\S+\s+\S+\s+\S+$/.test(cronText.trim())) {
+    // 仅在定时启用时校验 cron（未启用时允许为空，编辑旧任务不再被卡住）
+    if (cronEnabled && cronMode === 'custom' && !/^\S+\s+\S+\s+\S+\s+\S+\s+\S+$/.test(cronText.trim())) {
       return message.warning('请输入合法的 cron 表达式（5 段）')
     }
-    const cron = cronMode === 'custom' ? cronText.trim() : cronMode
+    const cron = cronEnabled ? (cronMode === 'custom' ? cronText.trim() : cronMode) : ''
     let delivery = { type: 'none' }
     if (deliveryType === 'email' && deliveryTo) {
       delivery = { type: 'email', to: deliveryTo.split(/[,，\s]+/).filter(Boolean) }
