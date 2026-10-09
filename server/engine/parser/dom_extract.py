@@ -146,7 +146,7 @@ EXTRACT_JS = r"""
     out.fields.push({ ...base, component: 'el_input', placeholder: (inner && inner.placeholder) || '', selector: cssPath(el) });
   });
 
-  // ===== XUI（企业内部组件库，Element UI 同源，xui- 前缀） =====
+  // ===== XUI（内部定制组件库，Element UI 同源，xui- 前缀） =====
   document.querySelectorAll('.xui-form-item').forEach((item, idx) => {
     if (!visible(item) || inChrome(item)) return;
     const label = ((item.querySelector('.xui-form-item__label') || {}).textContent || '').trim();
@@ -199,12 +199,30 @@ EXTRACT_JS = r"""
     }
   });
 
+  // ===== ExtJS（x-form）：表单项为 table.x-form-item，label[for] 关联 input id =====
+  document.querySelectorAll('table.x-form-item').forEach((item, idx) => {
+    if (!visible(item)) return;
+    const input = item.querySelector('input.x-form-field, textarea.x-form-field');
+    if (!input) return;
+    const labelEl = item.querySelector('.x-form-item-label') || item.querySelector('label[for]');
+    const label = ((labelEl || {}).textContent || '').trim();
+    const ph = (input.placeholder || '').trim();
+    if (!label && !ph) return;  // 无标签无占位符的内部控件不入候选
+    const isCombo = input.readOnly || !!item.querySelector('.x-form-trigger');
+    out.fields.push({
+      id: 'f_ext_' + idx, label,
+      component: isCombo ? 'ext_combo' : 'ext_input',
+      placeholder: ph,
+      selector: cssPath(input)
+    });
+  });
+
   // ===== 原生表单 =====
   document.querySelectorAll(
     'select, textarea, input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file])'
   ).forEach((el, idx) => {
-    // 排除已被组件库规则覆盖的 input（.el-input/.ant-input/.xui-input 自身及内部）
-    if (el.closest('.ant-form-item, .el-form-item, .xui-form-item, .ant-select, .ant-picker, .el-select, .el-date-editor, .ant-upload, .el-input, .ant-input, .ant-input-affix-wrapper, .xui-input, .xui-select, .xui-date-editor, .xui-radio-group, .xui-checkbox-group')) return;
+    // 排除已被组件库规则覆盖的 input（.el-input/.ant-input/.xui-input/ExtJS 自身及内部）
+    if (el.closest('.ant-form-item, .el-form-item, .xui-form-item, .ant-select, .ant-picker, .el-select, .el-date-editor, .ant-upload, .el-input, .ant-input, .ant-input-affix-wrapper, .xui-input, .xui-select, .xui-date-editor, .xui-radio-group, .xui-checkbox-group, table.x-form-item')) return;
     if (!visible(el) || inChrome(el)) return;
     const comp = el.tagName === 'SELECT' ? 'native_select'
       : el.tagName === 'TEXTAREA' ? 'native_textarea'

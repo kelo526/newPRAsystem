@@ -17,6 +17,9 @@ def normalize_fields(raw_fields):
         "oxd_input": "text",
         "xui_input": "text",
         "native_input": "text",
+        # ExtJS：文本/下拉统一按 text 处理（下拉以文本输入触发筛选）
+        "ext_input": "text",
+        "ext_combo": "text",
         "antd_textarea": "textarea",
         "native_textarea": "textarea",
         "antd_upload": "upload",

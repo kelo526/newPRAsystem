@@ -36,3 +36,6 @@ venv/
 
 # ä¸€æ¬¡æ€§éªŒè¯/è¯Šæ–­è„šæœ¬
 server/verify_*.py
+
+# Ç°¶Ë¹¹½¨²úÎï£¨setup.bat / start.bat ×Ô¶¯Éú³É£©
+web/dist/
